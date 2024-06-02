@@ -1,0 +1,13 @@
+/*jshint esversion: 6 */
+const mongoose = require("mongoose");
+
+const validTestsSchema = mongoose.Schema({
+  _id: String,
+  id: String
+},
+{
+  collection: 'ValidTests',
+  strict: false
+});
+
+module.exports = mongoose.model("ValidTests", validTestsSchema);
