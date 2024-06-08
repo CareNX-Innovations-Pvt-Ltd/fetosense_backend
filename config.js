@@ -4,7 +4,7 @@ configValue = {
 		mongodbName: 'fetosense-v2',
 		apiUrl: "https://backend.carenx.com:3006/api",
 		apiUrlLocal: "http://localhost:3006/api",
-		SSLPrivateKey: '/etc/letsencrypt/live/backend.carenx.com/fullchain.pem',
+		SSLPrivateKey: '/etc/letsencrypt/live/backend.carenx.com/privkey.pem',
 		SSLCertificate: '/etc/letsencrypt/live/backend.carenx.com/fullchain.pem',
 		production: true,
 		SSLHost: true,
