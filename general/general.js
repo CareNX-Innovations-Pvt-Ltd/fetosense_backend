@@ -207,7 +207,7 @@ exports.mongoFind = (req, res, next) => {
     if (!project) { project = null; }
     if (options) { userQuery = userQuery.find(query, project, options); } else { userQuery = userQuery.find(query, project); }
 
-    userQuery.then((result) => {
+    userQuery.maxTime(20000).then((result) => {
         res.status(200).json(result);
     }).catch(error => {
         console.log(error, 'error')
@@ -236,7 +236,7 @@ exports.mongoUpdate = async (req, res, next) => {
             err: err
         });
     }
-    if (data.constructor === Object){
+    if (data.constructor === Object) {
         data = JSON.stringify(data);
     }
     data = JSON.parse(data, JSON.dateParser);
@@ -490,10 +490,10 @@ exports.sortByKeyStartsWith = function (array, key, phrase) {
     return array.sort(function (a, b) {
         var x = a[key].toLowerCase(); var y = b[key].toLowerCase();
         phrase = phrase.toLowerCase();
-        var xv = x.startsWith(phrase) ? 2:0;
-        xv += x.includes(" "+phrase) ? 1:0;
-        var yv = y.startsWith(phrase) ? 2:0;
-        yv += y.includes(" "+phrase) ? 1:0;
+        var xv = x.startsWith(phrase) ? 2 : 0;
+        xv += x.includes(" " + phrase) ? 1 : 0;
+        var yv = y.startsWith(phrase) ? 2 : 0;
+        yv += y.includes(" " + phrase) ? 1 : 0;
         return ((xv > yv) ? -1 : ((xv < yv) ? 1 : 0));
     });
 }
