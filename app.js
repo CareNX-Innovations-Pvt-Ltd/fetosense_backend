@@ -31,8 +31,10 @@ if (config.configValue.mongoUrl) {
 //"mongodb://root:caremother2019@35.200.231.168:27017/caremotherdummy?authSource=admin"
 //caremotherdummy    caremother_v2
 
+mongoose.set('maxTimeMS', 20000);
+
 mongoose
-  .connect(url, { useNewUrlParser: true, useFindAndModify: false, useUnifiedTopology: true })
+  .connect(url, { useNewUrlParser: true, useFindAndModify: false, useUnifiedTopology: true, maxTimeMS: 20000 })
   .then(() => {
     console.log("Connected to database! =====>", databaseName);
   })
