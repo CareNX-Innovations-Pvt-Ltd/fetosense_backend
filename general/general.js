@@ -192,6 +192,7 @@ exports.mongoFind = (req, res, next) => {
 
     if (options && options.constructor == String) {
         options = JSON.parse(options, JSON.dateParser);
+        options['maxTime'] = 20000;
     }
     if (project && project.constructor == String) {
         project = JSON.parse(project, JSON.dateParser);
