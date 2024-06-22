@@ -9,9 +9,9 @@ exports.getData = (req, res, next) => {
     const fromDate = req.body.fromDate ? new Date(req.body.fromDate) : null;
     const toDate = req.body.toDate ? new Date(req.body.toDate) : null;
 
-    var query = { 
+    var query = {
         "type": "organization",
-        "isDeleted": {"$ne": true}
+        "isDeleted": { "$ne": true }
     }
     var testAggrQuery = [
         {
@@ -62,14 +62,20 @@ exports.getData = (req, res, next) => {
     }
 
     var testsCounts = {}; var mothersCounts = {};
+    console.log("qry1", query);
     const orgQuery = Users.find(query);
     orgQuery.then(documents => {
+        console.log("documents.length", documents.length);
         var allDocuments = JSON.parse(JSON.stringify(documents));
+        console.log("testAggrQuery", testAggrQuery);
         Tests.aggregate(testAggrQuery).then(tdocs => {
+            console.log("tdocs.length", tdocs.length);
             for (tdoc of tdocs) {
                 testsCounts[tdoc._id.organizationId] = tdoc.totalTests;
             }
+            console.log("mothersAggrQuery", mothersAggrQuery);
             Users.aggregate(mothersAggrQuery).then(udocs => {
+                console.log("udocs.length", udocs.length);
                 for (udoc of udocs) {
                     mothersCounts[udoc._id.organizationId] = udoc.totalMothers;
                 }
@@ -77,11 +83,11 @@ exports.getData = (req, res, next) => {
                     //allDocuments.push(documents[cnt]);
                     var doc = allDocuments[cnt];
                     //console.log(doc.documentId);
-                    if(allDocuments[cnt]["noOfMother"] != mothersCounts[doc.documentId]){
+                    if (allDocuments[cnt]["noOfMother"] != mothersCounts[doc.documentId]) {
                         aggregations.aggregateMothers(doc.documentId);
                     }
-                    if(allDocuments[cnt]["noOfTests"] != testsCounts[doc.documentId]){
-                        aggregations.aggregateTests(doc.documentId); 
+                    if (allDocuments[cnt]["noOfTests"] != testsCounts[doc.documentId]) {
+                        aggregations.aggregateTests(doc.documentId);
                     }
                     allDocuments[cnt]["noOfMother"] = mothersCounts[doc.documentId];
                     allDocuments[cnt]["noOfTests"] = testsCounts[doc.documentId];
