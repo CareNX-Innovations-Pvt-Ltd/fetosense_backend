@@ -68,13 +68,13 @@ exports.getData = (req, res, next) => {
         console.log("documents.length", documents.length);
         var allDocuments = JSON.parse(JSON.stringify(documents));
         console.log("testAggrQuery", testAggrQuery);
-        Tests.aggregate(testAggrQuery).then(tdocs => {
+        Tests.aggregate(testAggrQuery).maxTimeMS(240000).exec().then(tdocs => {
             console.log("tdocs.length", tdocs.length);
             for (tdoc of tdocs) {
                 testsCounts[tdoc._id.organizationId] = tdoc.totalTests;
             }
             console.log("mothersAggrQuery", mothersAggrQuery);
-            Users.aggregate(mothersAggrQuery).then(udocs => {
+            Users.aggregate(mothersAggrQuery).maxTimeMS(240000).exec().then(udocs => {
                 console.log("udocs.length", udocs.length);
                 for (udoc of udocs) {
                     mothersCounts[udoc._id.organizationId] = udoc.totalMothers;
