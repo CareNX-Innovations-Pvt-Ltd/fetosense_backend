@@ -22,7 +22,7 @@ exports.aggregateData = (req, res, next) => {
                 });
             });
         }
-        else if(aggregateParameter.toLowerCase().includes("platform mothers")){
+        else if (aggregateParameter.toLowerCase().includes("platform mothers")) {
             aggregatePlatformRegMothers(organizationId).then(() => {
                 return res.status(200).json({
                     "message": "Platform Mothers Aggregated Successfully!!"
@@ -145,7 +145,9 @@ function aggregateMothers(organizationId) {
                 "total": { "$sum": 1 }
             }
         });
-        users.aggregate(query).then(data => {
+        users.aggregate(query, {
+            maxTimeMS: 240000
+        }).then(data => {
             var finalDic = {};
             for (org of data) {
                 var orgId = org._id.organizationId;
@@ -157,7 +159,7 @@ function aggregateMothers(organizationId) {
             if (Object.keys(finalDic).length) {
                 var firestoreUpdateList = [];
                 for (elid in finalDic) {
-                    if(!elid){continue;}
+                    if (!elid) { continue; }
                     var element = finalDic[elid];
                     element['documentId'] = elid;
                     firestoreUpdateList.push(element);
@@ -195,7 +197,9 @@ function aggregateDevices(organizationId) {
                 "total": { "$sum": 1 }
             }
         });
-        users.aggregate(query).then(data => {
+        users.aggregate(query, {
+            maxTimeMS: 240000
+        }).then(data => {
             var finalDic = {};
             for (org of data) {
                 var orgId = org._id.organizationId;
@@ -243,7 +247,9 @@ function aggregateDoctors(organizationId) {
                 "total": { "$sum": 1 }
             }
         });
-        users.aggregate(query).then(data => {
+        users.aggregate(query, {
+            maxTimeMS: 240000
+        }).then(data => {
             var finalDic = {};
             for (org of data) {
                 var orgId = org._id.organizationId;
@@ -294,7 +300,9 @@ function aggregatePlatformRegMothers(organizationId) {
                 "totalMotherRegPlatform": { "$sum": { "$cond": [{ "$eq": ["$isPlatformReg", true] }, 1, 0] } },
             }
         });
-        users.aggregate(query).then(data => {
+        users.aggregate(query, {
+            maxTimeMS: 240000
+        }).then(data => {
             var finalDic = {};
             for (org of data) {
                 var orgId = org._id.organizationId;
