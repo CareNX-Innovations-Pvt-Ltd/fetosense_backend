@@ -70,7 +70,11 @@ exports.getData = (req, res, next) => {
         console.log("testAggrQuery", testAggrQuery);
         Tests.aggregate(testAggrQuery, {
             maxTimeMS: 240000
-        }).then(tdocs => {
+        }, function (err, tdocs) {
+            if (err) {
+                console.error("Aggregation error:", err);
+                return;
+            }
             console.log("tdocs.length", tdocs.length);
             for (tdoc of tdocs) {
                 testsCounts[tdoc._id.organizationId] = tdoc.totalTests;
@@ -109,12 +113,13 @@ exports.getData = (req, res, next) => {
                 });
             });
 
-        }).catch(error => {
-            console.log("Error", error);
-            res.status(500).json({
-                message: "Fetching Organizations failed!"
-            });
-        });
+        })
+        // .catch(error => {
+        //     console.log("Error", error);
+        //     res.status(500).json({
+        //         message: "Fetching Organizations failed!"
+        //     });
+        // });
 
     }).catch(error => {
         console.log("Error", error);

@@ -145,9 +145,7 @@ function aggregateMothers(organizationId) {
                 "total": { "$sum": 1 }
             }
         });
-        users.aggregate(query, {
-            maxTimeMS: 240000
-        }).then(data => {
+        users.aggregate(query).then(data => {
             var finalDic = {};
             for (org of data) {
                 var orgId = org._id.organizationId;
@@ -197,9 +195,7 @@ function aggregateDevices(organizationId) {
                 "total": { "$sum": 1 }
             }
         });
-        users.aggregate(query, {
-            maxTimeMS: 240000
-        }).then(data => {
+        users.aggregate(query).then(data => {
             var finalDic = {};
             for (org of data) {
                 var orgId = org._id.organizationId;
@@ -247,9 +243,7 @@ function aggregateDoctors(organizationId) {
                 "total": { "$sum": 1 }
             }
         });
-        users.aggregate(query, {
-            maxTimeMS: 240000
-        }).then(data => {
+        users.aggregate(query,).then(data => {
             var finalDic = {};
             for (org of data) {
                 var orgId = org._id.organizationId;
@@ -300,9 +294,7 @@ function aggregatePlatformRegMothers(organizationId) {
                 "totalMotherRegPlatform": { "$sum": { "$cond": [{ "$eq": ["$isPlatformReg", true] }, 1, 0] } },
             }
         });
-        users.aggregate(query, {
-            maxTimeMS: 240000
-        }).then(data => {
+        users.aggregate(query).then(data => {
             var finalDic = {};
             for (org of data) {
                 var orgId = org._id.organizationId;
