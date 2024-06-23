@@ -80,9 +80,7 @@ exports.getData = (req, res, next) => {
         //         testsCounts[tdoc._id.organizationId] = tdoc.totalTests;
         //     }
         console.log("mothersAggrQuery", mothersAggrQuery);
-        Users.aggregate(mothersAggrQuery, {
-            maxTimeMS: 240000
-        }).then(udocs => {
+        Users.aggregate(mothersAggrQuery).then(udocs => {
             console.log("udocs.length", udocs.length);
             for (udoc of udocs) {
                 mothersCounts[udoc._id.organizationId] = udoc.totalMothers;
