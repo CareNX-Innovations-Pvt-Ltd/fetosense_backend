@@ -41,16 +41,19 @@ exports.getData = (req, res, next) => {
         // "testById":1, "testByMother":1, "weight":1
         "createdOn": 1, "motherName": 1, "gAge": 1, "lengthOfTest": 1, "autoInterpretations": 1, "autoMovementEntries": 1,
         "movementEntries": 1, "testByMother": 1, "doctorName": 1, "organizationName": 1, "id": 1, "documentId": 1, "organizationId": 1, "motherId": 1,
-        "tocoEntries": 1, "deviceId":1, "autoFetalMovement": 1, "fisherScore": 1
+        "tocoEntries": 1, "deviceId": 1, "autoFetalMovement": 1, "fisherScore": 1
     };
     var momDict = {};
     var finalLst = [];
+
+    console.log("uquery", uquery);
     Users.find(uquery, { "age": 1 }, {}).then((moms) => {
-        //console.log("moms", moms);
+        console.log("moms", moms.length);
         for (var i = 0; i < moms.length; i++) {
             var mom = general.clone(JSON.parse(JSON.stringify(moms[i])));
             momDict[mom._id] = mom.age;
         }
+        console.log("tquery", query);
         return testsQuery = Tests.find(query, project, {});
     }).then(documents => {
         for (var i = 0; i < documents.length; i++) {
@@ -60,7 +63,7 @@ exports.getData = (req, res, next) => {
             for (var ac of doc.autoMovementEntries) { if (ac >= 5) { autoCnt += 1; } }
             doc["noAutoMovementEntries"] = autoCnt;
 
-           
+
             doc.autoFetalMovement = doc.autoFetalMovement ? doc.autoFetalMovement : [];
             doc["noAutoFetalMovement"] = doc.autoFetalMovement.length;
 
