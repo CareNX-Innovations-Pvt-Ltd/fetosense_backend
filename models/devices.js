@@ -9,7 +9,7 @@ const devicesSchema = mongoose.Schema({
   {
     collection: 'devices',
     strict: false,
-    maxTimeMS: 20000
+    maxTimeMS: 60000
   });
 
 module.exports = mongoose.model("devices", devicesSchema);

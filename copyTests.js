@@ -1,6 +1,6 @@
 const { MongoClient, BulkWriteOperation } = require('mongodb');
 
-const uri = 'mongodb+srv://dba:%5Eaddy%23007%23@fetosense.mongocluster.cosmos.azure.com/?tls=true&authMechanism=SCRAM-SHA-256&retrywrites=false&maxIdleTimeMS=120000&authSource=quickstartDB';
+const uri = 'mongodb+srv://dba:%5Eaddy%23007%23@fetosense.mongocluster.cosmos.azure.com/?tls=true&authMechanism=SCRAM-SHA-256&retrywrites=false&maxIdleTimeMS=160000&authSource=quickstartDB';
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 
 async function copyData(modCompleted) {

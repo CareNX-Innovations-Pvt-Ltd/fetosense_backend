@@ -143,7 +143,7 @@ exports.mongoAggregate = (req, res, next) => {
             statusCode: 400
         });
     }
-    var userQuery = collections[collection].aggregate(query);
+    var userQuery = collections[collection].aggregate(query).maxTime(60000);
     userQuery.then((result) => {
         res.status(200).json(result);
     }).catch(error => {
@@ -192,7 +192,7 @@ exports.mongoFind = (req, res, next) => {
 
     if (options && options.constructor == String) {
         options = JSON.parse(options, JSON.dateParser);
-        options['maxTime'] = 20000;
+        options['maxTime'] = 60000;
     }
     if (project && project.constructor == String) {
         project = JSON.parse(project, JSON.dateParser);
@@ -208,7 +208,7 @@ exports.mongoFind = (req, res, next) => {
     if (!project) { project = null; }
     if (options) { userQuery = userQuery.find(query, project, options); } else { userQuery = userQuery.find(query, project); }
 
-    userQuery.maxTime(20000).then((result) => {
+    userQuery.maxTime(60000).then((result) => {
         res.status(200).json(result);
     }).catch(error => {
         console.log(error, 'error')

@@ -8,7 +8,7 @@ const notificationsSchema = mongoose.Schema({
   {
     collection: 'notifications',
     strict: false,
-    maxTimeMS: 20000
+    maxTimeMS: 60000
   });
 
 module.exports = mongoose.model("notifications", notificationsSchema);

@@ -8,7 +8,7 @@ const testsSchema = mongoose.Schema({
   {
     collection: 'tests',
     strict: false,
-    maxTimeMS: 20000
+    maxTimeMS: 60000
   });
 
 module.exports = mongoose.model("tests", testsSchema);

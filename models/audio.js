@@ -8,7 +8,7 @@ const audioSchema = mongoose.Schema({
   {
     collection: 'audio',
     strict: false,
-    maxTimeMS: 20000
+    maxTimeMS: 60000
   });
 
 module.exports = mongoose.model("audio", audioSchema);
