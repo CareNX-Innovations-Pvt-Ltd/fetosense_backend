@@ -73,6 +73,7 @@ exports.getData = (req, res, next) => {
             for (var mc of doc.movementEntries) { if (mc >= 5) { mcnt += 1; } }
             doc["noMovementEntries"] = mcnt;
             doc["age"] = momDict[doc.motherId] ? momDict[doc.motherId] : 0;
+            if (doc.tocoEntries && typeof doc.tocoEntries === 'string') { doc.tocoEntries = JSON.parse(doc.tocoEntries); }
             doc.testType = (doc.tocoEntries) && (doc.tocoEntries.length) && (average(doc.tocoEntries) > 1) ? "CTG" : "NST";
             delete doc.autoMovementEntries;
             delete doc.movementEntries;
