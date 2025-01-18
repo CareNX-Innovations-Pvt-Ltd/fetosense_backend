@@ -2,7 +2,8 @@
 const mongoose = require("mongoose");
 
 var caremotherPublic = {
-  mongoUrl: 'mongodb://dba:^addy#007#@c.fetosense.mongocluster.cosmos.azure.com:10260/carenx-public?ssl=true',
+  mongoUrl: 'mongodb+srv://dba:Kul-adi_0070@prod-carenx-database.global.mongocluster.cosmos.azure.com/?tls=true&authMechanism=SCRAM-SHA-256&retrywrites=false&maxIdleTimeMS=120000',
+  old_mongoUrl: 'mongodb://dba:^addy#007#@c.fetosense.mongocluster.cosmos.azure.com:10260/carenx-public?ssl=true',
   mongodbName: 'caremother-public',
 
   // API Hosted Url
