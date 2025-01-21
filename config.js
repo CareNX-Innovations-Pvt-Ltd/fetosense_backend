@@ -1,6 +1,6 @@
 configValue = {
 	"fetosense-v2": {
-		mongoUrl: 'mongodb+srv://dba:Kul-adi_0070@prod-carenx-database.global.mongocluster.cosmos.azure.com/?tls=true&authMechanism=SCRAM-SHA-256&retrywrites=false&maxIdleTimeMS=120000',
+		mongoUrl: 'mongodb+srv://dba:Kul-adi_0070@prod-carenx-database.global.mongocluster.cosmos.azure.com/fetosense-v2?tls=true&authMechanism=SCRAM-SHA-256&retrywrites=false&maxIdleTimeMS=120000',
 		old_mongoUrl: 'mongodb://dba:^addy#007#@c.fetosense.mongocluster.cosmos.azure.com:10260/fetosense-v2?ssl=true',
 		mongodbName: 'fetosense-v2',
 		apiUrl: "https://backend.carenx.com:3006/api",
