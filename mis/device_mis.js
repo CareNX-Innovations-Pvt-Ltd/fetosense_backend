@@ -26,19 +26,19 @@ exports.getData = (req, res, next) => {
     }
 
     var orgDic = {};
-    console.log("query", query);
-    console.log("queryOrg", queryOrg);
+    //console.log("query", query);
+    //console.log("queryOrg", queryOrg);
     const deviceQuery = Users.find(query);
     const orgQuery = Users.find(queryOrg);
     orgQuery.then(orgs => {
         for (var org of orgs) {
             orgDic[org.documentId] = JSON.parse(JSON.stringify(org));
         }
-        console.log("orgDic", orgDic);
+        //console.log("orgDic", orgDic);
         return deviceQuery;
 
     }).then(documents => {
-        console.log("documents.lenght", documents.length)
+        //console.log("documents.lenght", documents.length)
         orgDic = JSON.parse(JSON.stringify(orgDic));
         //console.log("orgDic", orgDic);
         for (ctr = 0; ctr < documents.length; ctr++) {
@@ -60,7 +60,7 @@ exports.getData = (req, res, next) => {
             doc.contactMobile = orgn.mobile ? orgn.mobile : null;
 
             documents[ctr] = doc;
-            console.log("doc", doc);
+            //console.log("doc", doc);
         }
         //console.log("documents", documents);
         return res.status(200).json({
