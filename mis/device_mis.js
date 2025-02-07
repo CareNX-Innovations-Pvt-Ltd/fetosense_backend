@@ -26,6 +26,8 @@ exports.getData = (req, res, next) => {
     }
 
     var orgDic = {};
+    console.log("query", query);
+    console.log("queryOrg", queryOrg);
     const deviceQuery = Users.find(query);
     const orgQuery = Users.find(queryOrg);
     orgQuery.then(orgs => {
@@ -36,7 +38,7 @@ exports.getData = (req, res, next) => {
         return deviceQuery;
 
     }).then(documents => {
-        console.log("documents.lenght", documents.lenght)
+        console.log("documents.lenght", documents.length)
         orgDic = JSON.parse(JSON.stringify(orgDic));
         //console.log("orgDic", orgDic);
         for (ctr = 0; ctr < documents.length; ctr++) {
