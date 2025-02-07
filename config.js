@@ -8,7 +8,7 @@ configValue = {
 		SSLPrivateKey: '/etc/letsencrypt/live/backend.carenx.com/privkey.pem',
 		SSLCertificate: '/etc/letsencrypt/live/backend.carenx.com/fullchain.pem',
 		production: true,
-		SSLHost: false,
+		SSLHost: true,
 		projectId: "fetosense-v2",
 		firebaseApiUrl: "https://us-central1-fetosense-v2.cloudfunctions.net/",
 		port: "3006",
