@@ -2,7 +2,7 @@
 const mongoose = require("mongoose");
 
 var caremotherPublic = {
-  mongoUrl: 'mongodb+srv://dba:Kul-adi_0070@prod-carenx-database.global.mongocluster.cosmos.azure.com/?tls=true&authMechanism=SCRAM-SHA-256&retrywrites=false&maxIdleTimeMS=120000',
+  mongoUrl: 'mongodb://fetosense:C-nx#25*@fetosense-db-cluster.cluster-cziak2w6e5md.us-east-1.docdb.amazonaws.com:27017/?directConnection=true&retryWrites=false&tls=true&tlsCAFile=../global-bundle.pem',
   old_mongoUrl: 'mongodb://dba:^addy#007#@c.fetosense.mongocluster.cosmos.azure.com:10260/carenx-public?ssl=true',
   mongodbName: 'caremother-public',
 
