@@ -29,8 +29,16 @@ async function copyData(modCompleted) {
         const sort = { modifiedTimeStamp: 1 }; // Sort in descending order to get the latest document
         const options = { projection: { _id: 0, modifiedTimeStamp: 1 }, sort };
         let lastdoc = await destinationCollection.findOne({}, options);
-        modCompleted = lastdoc.modifiedTimeStamp;
-        console.log("modCompleted", modCompleted);
+
+if (!lastdoc) {
+    console.warn("No previous documents found in destinationCollection. Setting modCompleted to a default value.");
+    modCompleted = Date.now(); // You may set it to a timestamp like `0` or `Date.now()` as per requirement.
+} else {
+    modCompleted = lastdoc.modifiedTimeStamp;
+}
+
+console.log("modCompleted", modCompleted);
+
         while (true) {
             const cursor = sourceCollection.find({ modifiedTimeStamp: { "$lt": modCompleted } }, { projection: colsDic })
                 .sort({ modifiedTimeStamp: -1 })
