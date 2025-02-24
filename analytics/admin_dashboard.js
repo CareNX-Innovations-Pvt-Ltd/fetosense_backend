@@ -130,20 +130,116 @@ function getDirectAnalytics(retDict, fromDate, toDate) {
     })
 }
 
+// function prepareTrend(startDate, endDate) {
+//     var qry = [
+//         { "$match": { "type": "mother", "createdOn": { "$gte": startDate, "$lte": endDate } } },
+//         {
+//             "$project": {
+//                 "day": { "$dayOfMonth": "$createdOn" },
+//                 "month": { "$month": "$createdOn" },
+//                 "year": { "$year": "$createdOn" },
+//             }
+//         },
+//         {
+//             "$group": {
+//                 "_id": { "day": "$day", "month": "$month", "year": "$year" },
+//                 "mothersRegistered": { "$sum": 1 },
+//             }
+//         }
+//     ];
+
+//     var qryTests = [
+//         { "$match": { "createdOn": { "$gte": startDate, "$lte": endDate } } },
+//         {
+//             "$project": {
+//                 "day": { "$dayOfMonth": "$createdOn" },
+//                 "month": { "$month": "$createdOn" },
+//                 "year": { "$year": "$createdOn" },
+//             }
+//         },
+//         {
+//             "$group": {
+//                 "_id": { "day": "$day", "month": "$month", "year": "$year" },
+//                 "testsTaken": { "$sum": 1 },
+//             }
+//         }
+//     ];
+//     //console.log("___debug qry", JSON.stringify(qry[0]));
+//     //console.log("___debug qryTests", JSON.stringify(qryTests[0]));
+//     return new Promise((resolve, reject) => {
+//         try {
+//             users.aggregate(qry).then(respUsr => {
+//                 var generalDic = {};
+//                 //console.log("___debug respUsr.length", respUsr.length);
+//                 for (usrObj of respUsr) {
+//                     var dateKey = usrObj._id.year + "-" + set2Digit(usrObj._id.month) + "-" + set2Digit(usrObj._id.day);
+//                     if (!generalDic[dateKey]) { generalDic[dateKey] = { "mothersRegistered": 0, "testsTaken": 0, "date": dateKey } };
+//                     generalDic[dateKey]["mothersRegistered"] = usrObj.mothersRegistered;
+//                 }
+//                 tests.aggregate(qryTests).then(resptst => {
+//                     //console.log("___debug resptst.length", resptst.length);
+//                     for (tstObj of resptst) {
+//                         var dateKey = tstObj._id.year + "-" + set2Digit(tstObj._id.month) + "-" + set2Digit(tstObj._id.day);
+//                         if (!generalDic[dateKey]) { generalDic[dateKey] = { "mothersRegistered": 0, "testsTaken": 0, "date": dateKey } };
+//                         generalDic[dateKey]["testsTaken"] = tstObj.testsTaken;
+//                     }
+
+//                     var finalLst = [];
+//                     var isFirstFound = false;
+//                     var curDate = startDate;
+//                     while (curDate <= endDate) {
+//                         //console.log("___debug ", generalDic, curDate.toISOString().split("T")[0]);
+//                         if (curDate.toISOString().split("T")[0] in generalDic) {
+//                             isFirstFound = true;
+//                             finalLst.push(generalDic[curDate.toISOString().split("T")[0]]);
+//                         }
+//                         else if (isFirstFound) {
+//                             finalLst.push({ "mothersRegistered": 0, "testsTaken": 0, "date": curDate.toISOString().split("T")[0] });
+//                         }
+//                         else {
+//                             // skip
+//                         }
+//                         curDate.setDate(curDate.getDate() + 1);
+//                     }
+//                     return resolve(finalLst);
+//                 }).catch(err => {
+//                     reject(err);
+//                 })
+
+//             }).catch(err => {
+//                 reject(err);
+//             });
+
+//         }
+//         catch (err) {
+//             return reject(err);
+//         }
+//     });
+
+// }
+
 function prepareTrend(startDate, endDate) {
     var qry = [
         { "$match": { "type": "mother", "createdOn": { "$gte": startDate, "$lte": endDate } } },
         {
             "$project": {
-                "day": { "$dayOfMonth": "$createdOn" },
-                "month": { "$month": "$createdOn" },
-                "year": { "$year": "$createdOn" },
+                "createdOnUTC": "$createdOn",
+                "createdOnIST": {
+                    "$dateAdd": {
+                        "startDate": "$createdOn",
+                        "unit": "hour",
+                        "amount": 5.5 
+                    }
+                },
+                "day": { "$dayOfMonth": { "$dateAdd": { "startDate": "$createdOn", "unit": "hour", "amount": 5.5 } } },
+                "month": { "$month": { "$dateAdd": { "startDate": "$createdOn", "unit": "hour", "amount": 5.5 } } },
+                "year": { "$year": { "$dateAdd": { "startDate": "$createdOn", "unit": "hour", "amount": 5.5 } } }
             }
         },
         {
             "$group": {
                 "_id": { "day": "$day", "month": "$month", "year": "$year" },
-                "mothersRegistered": { "$sum": 1 },
+                "mothersRegistered": { "$sum": 1 }
             }
         }
     ];
@@ -152,32 +248,37 @@ function prepareTrend(startDate, endDate) {
         { "$match": { "createdOn": { "$gte": startDate, "$lte": endDate } } },
         {
             "$project": {
-                "day": { "$dayOfMonth": "$createdOn" },
-                "month": { "$month": "$createdOn" },
-                "year": { "$year": "$createdOn" },
+                "createdOnUTC": "$createdOn",
+                "createdOnIST": {
+                    "$dateAdd": {
+                        "startDate": "$createdOn",
+                        "unit": "hour",
+                        "amount": 5.5
+                    }
+                },
+                "day": { "$dayOfMonth": { "$dateAdd": { "startDate": "$createdOn", "unit": "hour", "amount": 5.5 } } },
+                "month": { "$month": { "$dateAdd": { "startDate": "$createdOn", "unit": "hour", "amount": 5.5 } } },
+                "year": { "$year": { "$dateAdd": { "startDate": "$createdOn", "unit": "hour", "amount": 5.5 } } }
             }
         },
         {
             "$group": {
                 "_id": { "day": "$day", "month": "$month", "year": "$year" },
-                "testsTaken": { "$sum": 1 },
+                "testsTaken": { "$sum": 1 }
             }
         }
     ];
-    //console.log("___debug qry", JSON.stringify(qry[0]));
-    //console.log("___debug qryTests", JSON.stringify(qryTests[0]));
+
     return new Promise((resolve, reject) => {
         try {
             users.aggregate(qry).then(respUsr => {
                 var generalDic = {};
-                //console.log("___debug respUsr.length", respUsr.length);
                 for (usrObj of respUsr) {
                     var dateKey = usrObj._id.year + "-" + set2Digit(usrObj._id.month) + "-" + set2Digit(usrObj._id.day);
                     if (!generalDic[dateKey]) { generalDic[dateKey] = { "mothersRegistered": 0, "testsTaken": 0, "date": dateKey } };
                     generalDic[dateKey]["mothersRegistered"] = usrObj.mothersRegistered;
                 }
                 tests.aggregate(qryTests).then(resptst => {
-                    //console.log("___debug resptst.length", resptst.length);
                     for (tstObj of resptst) {
                         var dateKey = tstObj._id.year + "-" + set2Digit(tstObj._id.month) + "-" + set2Digit(tstObj._id.day);
                         if (!generalDic[dateKey]) { generalDic[dateKey] = { "mothersRegistered": 0, "testsTaken": 0, "date": dateKey } };
@@ -186,34 +287,30 @@ function prepareTrend(startDate, endDate) {
 
                     var finalLst = [];
                     var isFirstFound = false;
-                    var curDate = startDate;
-                    while (curDate <= endDate) {
-                        //console.log("___debug ", generalDic, curDate.toISOString().split("T")[0]);
-                        if (curDate.toISOString().split("T")[0] in generalDic) {
+                    var curDate = new Date(startDate); 
+                    var endDateObj = new Date(endDate);
+                    
+                    while (curDate <= endDateObj) {
+                        var dateKey = curDate.toISOString().split("T")[0];
+                        if (dateKey in generalDic) {
                             isFirstFound = true;
-                            finalLst.push(generalDic[curDate.toISOString().split("T")[0]]);
-                        }
-                        else if (isFirstFound) {
-                            finalLst.push({ "mothersRegistered": 0, "testsTaken": 0, "date": curDate.toISOString().split("T")[0] });
-                        }
-                        else {
-                            // skip
+                            finalLst.push(generalDic[dateKey]);
+                        } else if (isFirstFound) {
+                            finalLst.push({ "mothersRegistered": 0, "testsTaken": 0, "date": dateKey });
                         }
                         curDate.setDate(curDate.getDate() + 1);
                     }
                     return resolve(finalLst);
                 }).catch(err => {
                     reject(err);
-                })
+                });
 
             }).catch(err => {
                 reject(err);
             });
 
-        }
-        catch (err) {
+        } catch (err) {
             return reject(err);
         }
     });
-
 }
