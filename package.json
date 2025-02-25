@@ -15,8 +15,6 @@
     "compodoc": "./node_modules/.bin/compodoc -p src/tsconfig.app.json",
     "docs": "jsdoc -c jsdoc.json",
     "doc": "npm run docs"
-
-
   },
   "keywords": [],
   "author": "",
