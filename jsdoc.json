@@ -10,8 +10,7 @@
     },
     "templates": {
       "default": {
-        "outputSourceFiles": true,
-        "title": "Fetosense Backend"
+        "outputSourceFiles": true
       }
     }
   }
