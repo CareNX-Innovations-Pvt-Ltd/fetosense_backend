@@ -330,6 +330,7 @@ function prepareTrend(startDate, endDate) {
                                 curDate.setDate(curDate.getDate() + 1);
                             }
                             // console.log("Data in prepareTrend before resolve:", finalLst);
+                            //data coming correct
                             return resolve(finalLst);
                         }).catch(err => {
                             reject(err);
