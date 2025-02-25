@@ -228,12 +228,25 @@ function prepareTrend(startDate, endDate) {
                     "$dateAdd": {
                         "startDate": "$createdOn",
                         "unit": "hour",
-                        "amount": 5.5 
+                        "amount": 5 // Add 5 hours
                     }
                 },
-                "day": { "$dayOfMonth": { "$dateAdd": { "startDate": "$createdOn", "unit": "hour", "amount": 5.5 } } },
-                "month": { "$month": { "$dateAdd": { "startDate": "$createdOn", "unit": "hour", "amount": 5.5 } } },
-                "year": { "$year": { "$dateAdd": { "startDate": "$createdOn", "unit": "hour", "amount": 5.5 } } }
+                "createdOnISTWithMinutes": {
+                    "$dateAdd": {
+                        "startDate": {
+                            "$dateAdd": {
+                                "startDate": "$createdOn",
+                                "unit": "hour",
+                                "amount": 5
+                            }
+                        },
+                        "unit": "minute",
+                        "amount": 30 // Add 30 minutes
+                    }
+                },
+                "day": { "$dayOfMonth": { "$dateAdd": { "startDate": "$createdOn", "unit": "hour", "amount": 5 } } },
+                "month": { "$month": { "$dateAdd": { "startDate": "$createdOn", "unit": "hour", "amount": 5 } } },
+                "year": { "$year": { "$dateAdd": { "startDate": "$createdOn", "unit": "hour", "amount": 5 } } }
             }
         },
         {
@@ -253,12 +266,25 @@ function prepareTrend(startDate, endDate) {
                     "$dateAdd": {
                         "startDate": "$createdOn",
                         "unit": "hour",
-                        "amount": 5.5
+                        "amount": 5 // Add 5 hours
                     }
                 },
-                "day": { "$dayOfMonth": { "$dateAdd": { "startDate": "$createdOn", "unit": "hour", "amount": 5.5 } } },
-                "month": { "$month": { "$dateAdd": { "startDate": "$createdOn", "unit": "hour", "amount": 5.5 } } },
-                "year": { "$year": { "$dateAdd": { "startDate": "$createdOn", "unit": "hour", "amount": 5.5 } } }
+                "createdOnISTWithMinutes": {
+                    "$dateAdd": {
+                        "startDate": {
+                            "$dateAdd": {
+                                "startDate": "$createdOn",
+                                "unit": "hour",
+                                "amount": 5
+                            }
+                        },
+                        "unit": "minute",
+                        "amount": 30 // Add 30 minutes
+                    }
+                },
+                "day": { "$dayOfMonth": { "$dateAdd": { "startDate": "$createdOn", "unit": "hour", "amount": 5 } } },
+                "month": { "$month": { "$dateAdd": { "startDate": "$createdOn", "unit": "hour", "amount": 5 } } },
+                "year": { "$year": { "$dateAdd": { "startDate": "$createdOn", "unit": "hour", "amount": 5 } } }
             }
         },
         {
