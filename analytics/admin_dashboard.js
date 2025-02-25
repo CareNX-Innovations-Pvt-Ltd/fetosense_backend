@@ -268,49 +268,101 @@ function prepareTrend(startDate, endDate) {
             }
         }
     ];
-
     return new Promise((resolve, reject) => {
-        try {
-            users.aggregate(qry).then(respUsr => {
-                var generalDic = {};
-                for (usrObj of respUsr) {
-                    var dateKey = usrObj._id.year + "-" + set2Digit(usrObj._id.month) + "-" + set2Digit(usrObj._id.day);
-                    if (!generalDic[dateKey]) { generalDic[dateKey] = { "mothersRegistered": 0, "testsTaken": 0, "date": dateKey } };
-                    generalDic[dateKey]["mothersRegistered"] = usrObj.mothersRegistered;
-                }
-                tests.aggregate(qryTests).then(resptst => {
-                    for (tstObj of resptst) {
-                        var dateKey = tstObj._id.year + "-" + set2Digit(tstObj._id.month) + "-" + set2Digit(tstObj._id.day);
-                        if (!generalDic[dateKey]) { generalDic[dateKey] = { "mothersRegistered": 0, "testsTaken": 0, "date": dateKey } };
-                        generalDic[dateKey]["testsTaken"] = tstObj.testsTaken;
-                    }
-
-                    var finalLst = [];
-                    var isFirstFound = false;
-                    var curDate = new Date(startDate); 
-                    var endDateObj = new Date(endDate);
-                    
-                    while (curDate <= endDateObj) {
-                        var dateKey = curDate.toISOString().split("T")[0];
-                        if (dateKey in generalDic) {
-                            isFirstFound = true;
-                            finalLst.push(generalDic[dateKey]);
-                        } else if (isFirstFound) {
-                            finalLst.push({ "mothersRegistered": 0, "testsTaken": 0, "date": dateKey });
+                try {
+                    users.aggregate(qry).then(respUsr => {
+                        var generalDic = {};
+                        //console.log("___debug respUsr.length", respUsr.length);
+                        for (usrObj of respUsr) {
+                            var dateKey = usrObj._id.year + "-" + set2Digit(usrObj._id.month) + "-" + set2Digit(usrObj._id.day);
+                            if (!generalDic[dateKey]) { generalDic[dateKey] = { "mothersRegistered": 0, "testsTaken": 0, "date": dateKey } };
+                            generalDic[dateKey]["mothersRegistered"] = usrObj.mothersRegistered;
                         }
-                        curDate.setDate(curDate.getDate() + 1);
-                    }
-                    return resolve(finalLst);
-                }).catch(err => {
-                    reject(err);
-                });
-
-            }).catch(err => {
-                reject(err);
+                        tests.aggregate(qryTests).then(resptst => {
+                            //console.log("___debug resptst.length", resptst.length);
+                            for (tstObj of resptst) {
+                                var dateKey = tstObj._id.year + "-" + set2Digit(tstObj._id.month) + "-" + set2Digit(tstObj._id.day);
+                                if (!generalDic[dateKey]) { generalDic[dateKey] = { "mothersRegistered": 0, "testsTaken": 0, "date": dateKey } };
+                                generalDic[dateKey]["testsTaken"] = tstObj.testsTaken;
+                            }
+        
+                            var finalLst = [];
+                            var isFirstFound = false;
+                            var curDate = startDate;
+                            while (curDate <= endDate) {
+                                //console.log("___debug ", generalDic, curDate.toISOString().split("T")[0]);
+                                if (curDate.toISOString().split("T")[0] in generalDic) {
+                                    isFirstFound = true;
+                                    finalLst.push(generalDic[curDate.toISOString().split("T")[0]]);
+                                }
+                                else if (isFirstFound) {
+                                    finalLst.push({ "mothersRegistered": 0, "testsTaken": 0, "date": curDate.toISOString().split("T")[0] });
+                                }
+                                else {
+                                    // skip
+                                }
+                                curDate.setDate(curDate.getDate() + 1);
+                            }
+                            return resolve(finalLst);
+                        }).catch(err => {
+                            reject(err);
+                        })
+        
+                    }).catch(err => {
+                        reject(err);
+                    });
+        
+                }
+                catch (err) {
+                    return reject(err);
+                }
             });
-
-        } catch (err) {
-            return reject(err);
+        
         }
-    });
-}
+        
+
+//     return new Promise((resolve, reject) => {
+//         try {
+//             users.aggregate(qry).then(respUsr => {
+//                 var generalDic = {};
+//                 for (usrObj of respUsr) {
+//                     var dateKey = usrObj._id.year + "-" + set2Digit(usrObj._id.month) + "-" + set2Digit(usrObj._id.day);
+//                     if (!generalDic[dateKey]) { generalDic[dateKey] = { "mothersRegistered": 0, "testsTaken": 0, "date": dateKey } };
+//                     generalDic[dateKey]["mothersRegistered"] = usrObj.mothersRegistered;
+//                 }
+//                 tests.aggregate(qryTests).then(resptst => {
+//                     for (tstObj of resptst) {
+//                         var dateKey = tstObj._id.year + "-" + set2Digit(tstObj._id.month) + "-" + set2Digit(tstObj._id.day);
+//                         if (!generalDic[dateKey]) { generalDic[dateKey] = { "mothersRegistered": 0, "testsTaken": 0, "date": dateKey } };
+//                         generalDic[dateKey]["testsTaken"] = tstObj.testsTaken;
+//                     }
+
+//                     var finalLst = [];
+//                     var isFirstFound = false;
+//                     var curDate = new Date(startDate); 
+//                     var endDateObj = new Date(endDate);
+                    
+//                     while (curDate <= endDateObj) {
+//                         var dateKey = curDate.toISOString().split("T")[0];
+//                         if (dateKey in generalDic) {
+//                             isFirstFound = true;
+//                             finalLst.push(generalDic[dateKey]);
+//                         } else if (isFirstFound) {
+//                             finalLst.push({ "mothersRegistered": 0, "testsTaken": 0, "date": dateKey });
+//                         }
+//                         curDate.setDate(curDate.getDate() + 1);
+//                     }
+//                     return resolve(finalLst);
+//                 }).catch(err => {
+//                     reject(err);
+//                 });
+
+//             }).catch(err => {
+//                 reject(err);
+//             });
+
+//         } catch (err) {
+//             return reject(err);
+//         }
+//     });
+// }
