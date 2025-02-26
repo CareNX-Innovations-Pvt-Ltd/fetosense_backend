@@ -4,7 +4,7 @@
       "recurse": true
     },
     "source": {
-      "include": ["analytics","aggregations","models"],
+      "include": ["general","analytics","aggregations","models"],
       "includePattern": "\\.js$",
       "excludePattern": "(node_modules|docs)"
     },

@@ -1,5 +1,11 @@
 /*jshint esversion: 6 */
 
+/**
+ * @file general.js
+ * @module general
+ * @description General utility functions and configurations used across the application.
+ */
+
 const users = require("../models/users"); // Import user model
 const dataset = require("../models/dataset"); // Import dataset model
 const devices = require("../models/devices"); // Import devices model
@@ -15,7 +21,17 @@ var config = require("../config");
 var log = require('../logger.js').LOG;
 const apiKeys = require("../apiKeys.json"); // Import Tracker Model
 
+/**
+ * Firestore API URL for updating data.
+ * @constant {string}
+ */
+
 const firestoreApiUrl = "https://us-central1-" + config.configValue.projectId + ".cloudfunctions.net/updateToFirestore/";
+
+/**
+ * Object mapping collection names to their respective models.
+ * @constant {Object}
+ */
 
 const collections = {
     'users': users,
@@ -26,6 +42,16 @@ const collections = {
     "ValidTests": ValidTests,
     "audio": audio
 };
+
+/**
+ * Parses JSON date strings into JavaScript `Date` objects.
+ * This function supports both ISO 8601 and Microsoft AJAX date formats.
+ * 
+ * @function JSON.dateParser
+ * @param {string} key - The key of the JSON object being parsed.
+ * @param {string|any} value - The value associated with the key, which may be a date string.
+ * @returns {Date|any} - A `Date` object if the value is a recognized date string; otherwise, the original value.
+ */
 
 JSON.dateParser = function (key, value) {
     var reISO = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}(?:\.\d*))(?:Z|(\+|-)([\d|:]*))?$/;
@@ -42,6 +68,18 @@ JSON.dateParser = function (key, value) {
     }
     return value;
 };
+
+/**
+ * Inserts data into a specified MongoDB collection.
+ * Supports both single document insertion and bulk insertions for arrays.
+ * 
+ * @async
+ * @function mongoInsert
+ * @param {Object} req - Express request object containing `data` (JSON string) and `collection` name.
+ * @param {Object} res - Express response object used to send HTTP responses.
+ * @param {Function} next - Express next function (not used in this function).
+ * @returns {Promise<void>} - Sends a response indicating success or failure.
+ */
 
 exports.mongoInsert = async (req, res, next) => {
     // get post body parameter
@@ -96,6 +134,19 @@ exports.mongoInsert = async (req, res, next) => {
     }
 };
 
+/**
+ * Inserts or updates a document in the specified MongoDB collection.
+ * 
+ * - If the document does not exist, it is inserted.
+ * - If `_id` is not provided but `documentId` exists, `_id` is set to `documentId`.
+ * - Uses `findOneAndUpdate` with `upsert` to ensure data is inserted or updated as needed.
+ * 
+ * @function insertDataToMongoDB
+ * @param {Object} data - The document data to insert or update.
+ * @param {string} collection - The name of the collection where data should be inserted.
+ * @returns {Promise<string>} - Resolves with a success message if the insertion is successful, otherwise rejects with an error.
+ */
+
 function insertDataToMongoDB(data, collection) {
     return new Promise((resolve, reject) => {
         //console.log(data);
@@ -117,6 +168,20 @@ function insertDataToMongoDB(data, collection) {
         });
     });
 }
+
+/**
+ * Performs an aggregation query on a specified MongoDB collection.
+ * 
+ * - Validates API keys before executing the aggregation.
+ * - Supports stringified and direct JSON queries.
+ * - Uses `.maxTime(60000)` to prevent long-running queries.
+ * 
+ * @function mongoAggregate
+ * @param {Object} req - Express request object containing `query` (aggregation pipeline) and `collection` name.
+ * @param {Object} res - Express response object used to send HTTP responses.
+ * @param {Function} next - Express next function (not used in this function).
+ * @returns {void} - Sends the aggregation result or an error response.
+ */
 
 exports.mongoAggregate = (req, res, next) => {
     // get post body parameter
@@ -159,6 +224,25 @@ exports.mongoAggregate = (req, res, next) => {
         }
     });
 };
+
+/**
+ * Performs a `find` query on a specified MongoDB collection.
+ * 
+ * - Validates API keys before executing the query.
+ * - Supports stringified and direct JSON queries.
+ * - Allows query projection and query options (e.g., sorting, limiting).
+ * - Uses `.maxTime(60000)` to prevent long-running queries.
+ * 
+ * @function mongoFind
+ * @param {Object} req - Express request object containing:
+ *   @param {Object|string} req.body.query - The MongoDB query filter.
+ *   @param {Object|string} [req.body.project] - Fields to project in the response.
+ *   @param {Object|string} [req.body.options] - Additional query options (e.g., limit, sort).
+ *   @param {string} req.body.collection - The collection name.
+ * @param {Object} res - Express response object used to send HTTP responses.
+ * @param {Function} next - Express next function (not used in this function).
+ * @returns {void} - Sends the query result or an error response.
+ */
 
 exports.mongoFind = (req, res, next) => {
     // get post body parameter
@@ -223,6 +307,23 @@ exports.mongoFind = (req, res, next) => {
     });
 };
 
+/**
+ * Updates data in a specified MongoDB collection.
+ * 
+ * - Validates API keys before executing the update.
+ * - Supports both single document updates and bulk updates for arrays.
+ * - Uses `updateDataToMongoDB` for performing updates.
+ * 
+ * @async
+ * @function mongoUpdate
+ * @param {Object} req - Express request object containing:
+ *   @param {Object|string} req.body.data - The data to update (can be an object or an array of objects).
+ *   @param {string} req.body.collection - The name of the collection where data should be updated.
+ * @param {Object} res - Express response object used to send HTTP responses.
+ * @param {Function} next - Express next function (not used in this function).
+ * @returns {Promise<void>} - Sends a response indicating success or failure.
+ */
+
 exports.mongoUpdate = async (req, res, next) => {
     // get post body parameter
     var data = req.body.data;
@@ -276,6 +377,19 @@ exports.mongoUpdate = async (req, res, next) => {
     }
 };
 
+/**
+ * Updates an existing document in a specified MongoDB collection.
+ * 
+ * - Logs the update operation with a timestamp.
+ * - Uses `update` to modify an existing document.
+ * - Rejects if required parameters (`data`, `collection`, `documentId`) are missing.
+ * 
+ * @function updateDataToMongoDB
+ * @param {Object} data - The document data to update.
+ * @param {string} collection - The name of the collection where data should be updated.
+ * @returns {Promise<string>} - Resolves with a success message if the update is successful, otherwise rejects with an error.
+ */
+
 function updateDataToMongoDB(data, collection) {
     return new Promise((resolve, reject) => {
         //console.log(data);
@@ -297,6 +411,22 @@ function updateDataToMongoDB(data, collection) {
         });
     });
 }
+
+/**
+ * Deletes documents from a specified MongoDB collection based on a query.
+ * 
+ * - Validates API keys before executing the delete operation.
+ * - Supports stringified and direct JSON queries.
+ * - Uses `deleteMany` to remove all matching documents.
+ * 
+ * @function mongoDelete
+ * @param {Object} req - Express request object containing:
+ *   @param {Object|string} req.body.query - The MongoDB query filter for deletion.
+ *   @param {string} req.body.collection - The collection name from which documents should be deleted.
+ * @param {Object} res - Express response object used to send HTTP responses.
+ * @param {Function} next - Express next function (not used in this function).
+ * @returns {void} - Sends the delete result or an error response.
+ */
 
 exports.mongoDelete = (req, res, next) => {
     // get post body parameter
@@ -348,6 +478,25 @@ exports.mongoDelete = (req, res, next) => {
     });
 };
 
+/**
+ * Sends an HTTP request from the server with JSON data.
+ * 
+ * - Supports `GET`, `POST`, `PUT`, and `DELETE` methods.
+ * - Validates API keys before executing the request.
+ * - Parses stringified JSON data if necessary.
+ * - Logs debug information if `debug` is enabled.
+ * 
+ * @function sendRequestFromServerJSON
+ * @param {Object} req - Express request object containing:
+ *   @param {string} req.body.url - The URL to which the request should be sent.
+ *   @param {Object|string} req.body.data - The request payload (can be a JSON object or a string).
+ *   @param {string} req.body.method - The HTTP method (`GET`, `POST`, `PUT`, `DELETE`).
+ *   @param {boolean} [req.body.debug] - If `true`, logs request details for debugging.
+ * @param {Object} res - Express response object used to send HTTP responses.
+ * @param {Function} next - Express next function (not used in this function).
+ * @returns {void} - Sends the request response or an error response.
+ */
+
 exports.sendRequestFromServerJSON = (req, res, next) => {
     const url = req.body.url;
     var requestData = req.body.data;
@@ -389,11 +538,36 @@ exports.sendRequestFromServerJSON = (req, res, next) => {
     });
 }
 
+/**
+ * Updates data in a Firestore collection by sending a POST request.
+ * 
+ * - Converts the data object to a JSON string before sending.
+ * - Uses `sendPostRequest` to send the request to Firestore.
+ * 
+ * @function updateToFirestore
+ * @param {string} collection - The Firestore collection to update.
+ * @param {Object|Array} data - The data to be updated in Firestore (can be an object or an array of objects).
+ * @returns {Promise<Object>} - A promise resolving to the Firestore update response.
+ */
+
 function updateToFirestore(collection, data) {
     data = JSON.stringify(data);
     return sendPostRequest(firestoreApiUrl, { "collection": collection, "data": data });
 }
 exports.updateToFirestore = updateToFirestore;
+
+/**
+ * Sends an HTTP POST request with form-urlencoded data.
+ * 
+ * - Uses the `request` module to send a POST request.
+ * - Sets headers to disable caching and specify content type.
+ * - Resolves on success, rejects on failure.
+ * 
+ * @function sendPostRequest
+ * @param {string} url - The URL to send the POST request to.
+ * @param {Object} requestData - The data to be sent in the request body.
+ * @returns {Promise<void>} - A promise that resolves when the request is successful, or rejects with an error.
+ */
 
 function sendPostRequest(url, requestData) {
     return new Promise((resolve, reject) => {
@@ -415,6 +589,19 @@ function sendPostRequest(url, requestData) {
     });
 }
 exports.sendPostRequest = sendPostRequest;
+
+/**
+ * Validates API keys for authentication.
+ * 
+ * - Checks if the provided API key exists in the allowed user roles.
+ * - Throws an error if the API key is missing or invalid.
+ * 
+ * @function checkApiKeys
+ * @param {Object} data - The request data containing the `apiKey`.
+ * @param {string[]} allowdUsers - An array of allowed user roles that can access the API.
+ * @throws {Error} Throws an error if the API key is missing or invalid.
+ * @returns {boolean} - Returns `true` if the API key is valid.
+ */
 
 function checkApiKeys(data, allowdUsers) {
     var keySet = [];
@@ -439,10 +626,35 @@ function checkApiKeys(data, allowdUsers) {
 
 exports.checkApiKeys = checkApiKeys;
 
+/**
+ * Formats a number to ensure it is always two digits.
+ * 
+ * - Converts a single-digit number to a two-digit string by prefixing it with `0`.
+ * - If the number is already two digits, it remains unchanged.
+ * 
+ * @function set2Digit
+ * @param {number} num - The number to format.
+ * @returns {string} - A two-digit formatted string representation of the number.
+ */
+
 function set2Digit(num) {
     return ("0" + num).substr(-2);
 }
 exports.set2Digit = set2Digit;
+
+/**
+ * Creates a deep copy of an object, array, or date.
+ * 
+ * - Handles primitive values, `null`, and `undefined`.
+ * - Recursively clones arrays and objects.
+ * - Copies `Date` objects by preserving their timestamps.
+ * - Throws an error if the object type is unsupported.
+ * 
+ * @function clone
+ * @param {any} obj - The object to clone.
+ * @throws {Error} Throws an error if the object's type isn't supported.
+ * @returns {any} - A deep copy of the provided object.
+ */
 
 function clone(obj) {
     var copy;
@@ -480,12 +692,38 @@ function clone(obj) {
 
 exports.clone = clone;
 
+/**
+ * Sorts an array of objects based on a specified key.
+ * 
+ * - Uses a comparator function to sort values in ascending order.
+ * - Supports numeric and string-based sorting.
+ * 
+ * @function sortByKey
+ * @param {Object[]} array - The array of objects to be sorted.
+ * @param {string} key - The key in each object used for sorting.
+ * @returns {Object[]} - The sorted array.
+ */
+
 exports.sortByKey = function (array, key) {
     return array.sort(function (a, b) {
         var x = a[key]; var y = b[key];
         return ((x < y) ? -1 : ((x > y) ? 1 : 0));
     });
 }
+
+/**
+ * Sorts an array of objects based on how closely a key's value matches a given phrase.
+ * 
+ * - Prioritizes values that start with the given phrase.
+ * - Gives secondary priority to values that contain the phrase after a space.
+ * - Performs case-insensitive comparisons.
+ * 
+ * @function sortByKeyStartsWith
+ * @param {Object[]} array - The array of objects to be sorted.
+ * @param {string} key - The key in each object used for sorting.
+ * @param {string} phrase - The phrase to prioritize in sorting.
+ * @returns {Object[]} - The sorted array.
+ */
 
 exports.sortByKeyStartsWith = function (array, key, phrase) {
     return array.sort(function (a, b) {
