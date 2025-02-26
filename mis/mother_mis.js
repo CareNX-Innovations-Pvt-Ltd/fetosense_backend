@@ -1,6 +1,32 @@
 /*jshint esversion: 6 */
+
+/**
+ * @file mis/mother-mis.js
+ * @module mis/mother-mis
+ * @description Fetches mother-related data based on filters and enriches it with organization and device information.
+ */
+
 const Users = require("../models/users"); // Import devices model
 const general = require("../general/general");
+
+/**
+ * Fetches mother data based on filters and enriches it with organization and device details.
+ * 
+ * - Filters mothers based on date range and organization ID.
+ * - Retrieves associated organization and device information.
+ * - Adjusts timestamps to IST (UTC+5:30).
+ * - Merges organization and device details into the mother data.
+ * 
+ * @function getData
+ * @param {Object} req - Express request object containing:
+ *   @param {string} [req.body.fromDate] - The start date for filtering mothers.
+ *   @param {string} [req.body.toDate] - The end date for filtering mothers.
+ *   @param {string} [req.body.organizationId] - The organization ID to filter mothers.
+ * @param {Object} res - Express response object used to send HTTP responses.
+ * @param {Function} next - Express next function (not used in this function).
+ * @returns {void} - Sends the filtered mother data or an error response.
+ */
+
 exports.getData = (req, res, next) => {
     console.log("body", JSON.stringify(req.body));
     var fromDate = req.body.fromDate ? new Date(req.body.fromDate) : null;

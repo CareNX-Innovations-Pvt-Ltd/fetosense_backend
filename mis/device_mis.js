@@ -1,6 +1,32 @@
 /*jshint esversion: 6 */
+
+/**
+ * @file mis/device-mis.js
+ * @module mis/device-mis
+ * @description Fetches device-related data, processes organization information, and calculates statistics.
+ */
+
 const Users = require("../models/users"); // Import devices model
 const general = require("../general/general");
+
+/**
+ * Fetches device data based on filters and enriches it with organization details.
+ * 
+ * - Filters devices based on date range, organization ID, and activity status.
+ * - Retrieves associated organization details.
+ * - Merges organization information into the device data.
+ * 
+ * @function getData
+ * @param {Object} req - Express request object containing:
+ *   @param {string} [req.body.fromDate] - The start date for filtering devices.
+ *   @param {string} [req.body.toDate] - The end date for filtering devices.
+ *   @param {string} [req.body.dateFilterCriteria="createdOn"] - The field used for date filtering.
+ *   @param {string} [req.body.organizationId] - The organization ID to filter devices.
+ * @param {Object} res - Express response object used to send HTTP responses.
+ * @param {Function} next - Express next function (not used in this function).
+ * @returns {void} - Sends the filtered and processed device data or an error response.
+ */
+
 exports.getData = (req, res, next) => {
     const fromDate = req.body.fromDate ? new Date(req.body.fromDate) : null;
     const toDate = req.body.toDate ? new Date(req.body.toDate) : null;
@@ -76,5 +102,15 @@ exports.getData = (req, res, next) => {
             });
         });
 };
+
+/**
+ * Computes the average of an array of numbers.
+ * 
+ * - Uses `reduce` to sum all elements and divides by the array length.
+ * 
+ * @function average
+ * @param {number[]} array - The array of numbers to calculate the average.
+ * @returns {number} - The computed average.
+ */
 
 const average = (array) => array.reduce((a, b) => a + b) / array.length;
