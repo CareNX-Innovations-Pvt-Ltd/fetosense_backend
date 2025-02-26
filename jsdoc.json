@@ -4,7 +4,7 @@
       "recurse": true
     },
     "source": {
-      "include": ["routes","mis","general","analytics","aggregations","models"],
+      "include": ["server.js","logger.js","config.js","app.js","search","routes","mis","general","analytics","aggregations","models"],
       "includePattern": "\\.js$",
       "excludePattern": "(node_modules|docs)"
     },

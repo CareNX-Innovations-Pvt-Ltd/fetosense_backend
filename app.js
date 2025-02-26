@@ -1,4 +1,10 @@
 /*jshint esversion: 6 */
+
+/**
+ * @file app.js
+ * @description Main Express application for the Fetosense backend.
+ */
+
 const path = require("path");
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -23,6 +29,15 @@ console.log(config.configValue.mongoUrl, 'config');
 
 
 const app = express();
+
+
+/**
+ * MongoDB Database Connection
+ * - Connects to the MongoDB database using Mongoose.
+ * - Logs success or failure messages.
+ * - Sets maxTimeMS to 60000ms for queries.
+ */
+
 var databaseName = config.configValue.mongodbName;
 if (config.configValue.mongoUrl) {
   var url = config.configValue.mongoUrl;
@@ -43,8 +58,12 @@ mongoose
   });
 
 
-
-
+/**
+ * Middleware
+ * - Body-parser: Parses incoming JSON and URL-encoded payloads.
+ * - CORS Headers: Allows all origins and specifies accepted methods and headers.
+ * - API Key Validation: Ensures authenticated access to API endpoints.
+ */
 
 app.use(bodyParser.json({ limit: "50mb", extended: true }));
 app.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
@@ -79,8 +98,14 @@ app.use((req, res, next) => {
   next();
 });
 
+
 /**
- * General Routes
+ * API Routes
+ * - `/api/general` → Handles general operations (MongoDB insert, find, update, delete, aggregate).
+ * - `/api/mis` → Handles MIS-related operations.
+ * - `/api/analytics` → Provides analytics data.
+ * - `/api/aggregations` → Handles data aggregation.
+ * - `/api/search` → Provides search functionality.
  */
 
 app.use("/api/general", general);
