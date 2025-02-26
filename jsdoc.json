@@ -4,7 +4,7 @@
       "recurse": true
     },
     "source": {
-      "include": ["models"],
+      "include": ["aggregations","models"],
       "includePattern": "\\.js$",
       "excludePattern": "(node_modules|docs)"
     },

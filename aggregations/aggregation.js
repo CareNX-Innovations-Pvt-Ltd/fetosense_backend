@@ -1,6 +1,20 @@
+/**
+ * @file aggregations/aggregations.js
+ * @module aggregations
+ * @description Functions to aggregate data for tests, mothers, devices, doctors, and platform-registered mothers.
+ */
+
 const users = require("../models/users"); // Import user model
 const tests = require("../models/tests"); // Import tests model
 const general = require("../general/general"); // import general functions
+
+/**
+ * Handles aggregation based on the request parameter.
+ * @function aggregateData
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next function.
+ */
 
 exports.aggregateData = (req, res, next) => {
     if (req.method === 'POST' || req.method === 'OPTIONS') {
@@ -79,6 +93,13 @@ exports.aggregateData = (req, res, next) => {
     }
 };
 
+/**
+ * Aggregates test data.
+ * @function aggregateTests
+ * @param {string} organizationId - The organization ID.
+ * @returns {Promise<void>}
+ */
+
 function aggregateTests(organizationId) {
     return new Promise((resolve, reject) => {
         var query = [];
@@ -125,6 +146,13 @@ function aggregateTests(organizationId) {
     });
 }
 exports.aggregateTests = aggregateTests;
+
+/**
+ * Aggregates mother data.
+ * @function aggregateMothers
+ * @param {string} organizationId - The organization ID.
+ * @returns {Promise<void>}
+ */
 
 function aggregateMothers(organizationId) {
     return new Promise((resolve, reject) => {
@@ -176,6 +204,13 @@ function aggregateMothers(organizationId) {
 }
 exports.aggregateMothers = aggregateMothers;
 
+/**
+ * Aggregates device data.
+ * @function aggregateDevices
+ * @param {string} organizationId - The organization ID.
+ * @returns {Promise<void>}
+ */
+
 function aggregateDevices(organizationId) {
     return new Promise((resolve, reject) => {
         var query = [];
@@ -224,6 +259,13 @@ function aggregateDevices(organizationId) {
 }
 exports.aggregateDevices = aggregateDevices;
 
+/**
+ * Aggregates doctor data.
+ * @function aggregateDoctors
+ * @param {string} organizationId - The organization ID.
+ * @returns {Promise<void>}
+ */
+
 function aggregateDoctors(organizationId) {
     return new Promise((resolve, reject) => {
         var query = [];
@@ -271,6 +313,13 @@ function aggregateDoctors(organizationId) {
     });
 }
 exports.aggregateDoctors = aggregateDoctors;
+
+/**
+ * Aggregates platform-registered mothers.
+ * @function aggregatePlatformRegMothers
+ * @param {string} organizationId - The organization ID.
+ * @returns {Promise<void>}
+ */
 
 function aggregatePlatformRegMothers(organizationId) {
     return new Promise((resolve, reject) => {
