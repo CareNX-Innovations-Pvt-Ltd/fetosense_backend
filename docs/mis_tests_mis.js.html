@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: mis/tests_mis.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: mis/tests_mis.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*jshint esversion: 6 */
+
+/**
+ * @file mis/test-mis.js
+ * @module mis/test-mis
+ * @description Fetches test-related data, processes movement entries, calculates test types, and enriches with mother details.
+ */
+
+const Tests = require("../models/tests"); // Import tests model
+const Users = require("../models/users"); // Import users model
+const general = require("../general/general");
+
+/**
+ * Computes the average of an array of numbers.
+ * 
+ * - Uses `reduce` to sum all elements and divides by the array length.
+ * 
+ * @function average
+ * @param {number[]} array - The array of numbers to calculate the average.
+ * @returns {number} - The computed average.
+ */
+
+
+const average = (array) => array.reduce((a, b) => a + b) / array.length;
+
+/**
+ * Fetches test data based on filters, processes movement entries, and determines test type.
+ * 
+ * - Filters tests based on date range, organization ID, and doctor ID.
+ * - Retrieves and integrates mother age details.
+ * - Processes auto and manual movement entries.
+ * - Determines test type as `CTG` or `NST` based on `tocoEntries`.
+ * - Returns processed test data with enriched details.
+ * 
+ * @function getData
+ * @param {Object} req - Express request object containing:
+ *   @param {string} [req.body.fromDate] - The start date for filtering tests.
+ *   @param {string} [req.body.toDate] - The end date for filtering tests.
+ *   @param {string} [req.body.organizationId] - The organization ID to filter tests.
+ *   @param {string} [req.body.doctorId] - The doctor ID to filter tests.
+ * @param {Object} res - Express response object used to send HTTP responses.
+ * @param {Function} next - Express next function (not used in this function).
+ * @returns {void} - Sends the processed test data or an error response.
+ */
+
+exports.getData = (req, res, next) => {
+    console.log("Test_MIS", req.body);
+    const fromDate = req.body.fromDate ? new Date(req.body.fromDate) : null;
+    const toDate = req.body.toDate ? new Date(req.body.toDate) : null;
+    const organization = req.body.organizationId;
+    const doctorId = req.body.doctorId;
+    var query = {
+        "delete": false
+    };
+    var uquery = { "type": "mother" };
+    console.log("fromDate", fromDate, "toDate", toDate);
+
+    if (req.body.fromDate != 'undefined' &amp;&amp; req.body.fromDate != null) {
+        query["createdOn"] = { "$gte": fromDate, "$lt": toDate }
+        uquery["$or"] = [{ "createdOn": { "$gte": fromDate, "$lt": toDate } }, { "modifiedAt": { "$gte": fromDate, "$lt": toDate } }]
+    }
+    else {
+        query["createdOn"] = { "$lte": toDate }
+    }
+
+    if (organization) {
+        query["organizationId"] = organization;
+        uquery["organizationId"] = organization;
+    }
+
+    if (doctorId) {
+        query["doctorId"] = doctorId;
+        uquery["doctorId"] = doctorId;
+    }
+    var project = {
+        // "associations":1, "audioFirePath":1, "audioLocalPath":1, "audioSynced":1, "createdBy":1, "createdOn":1, "delete":1, "deviceId":1, "deviceName":1,
+        // "doctorId":1, "doctorName":1, "documentId":1, "gAge":1, "id":1, "imageFirePath":1, "imageLocalPath":1, "imgSynced":1, "interpretationExtraComments":1,
+        // "interpretationType":1, "lengthOfTest":1, "modifiedAt":1, "modifiedTimeStamp":1, "motherId":1, "motherName":1,"organizationId":1, "organizationName":1,
+        // "testById":1, "testByMother":1, "weight":1
+        "createdOn": 1, "motherName": 1, "gAge": 1, "lengthOfTest": 1, "autoInterpretations": 1, "autoMovementEntries": 1,
+        "movementEntries": 1, "testByMother": 1, "doctorName": 1, "organizationName": 1, "id": 1, "documentId": 1, "organizationId": 1, "motherId": 1,
+        "tocoEntries": 1, "deviceId": 1, "autoFetalMovement": 1, "fisherScore": 1
+    };
+    var momDict = {};
+    var finalLst = [];
+
+    console.log("uquery", uquery);
+    Users.find(uquery, { "age": 1 }, {}).then((moms) => {
+        console.log("moms", moms.length);
+        for (var i = 0; i &lt; moms.length; i++) {
+            var mom = general.clone(JSON.parse(JSON.stringify(moms[i])));
+            momDict[mom._id] = mom.age;
+        }
+        console.log("tquery", query);
+        return testsQuery = Tests.find(query, project, {});
+    }).then(documents => {
+        for (var i = 0; i &lt; documents.length; i++) {
+            var doc = general.clone(JSON.parse(JSON.stringify(documents[i])));
+            var autoCnt = 0;
+            doc.autoMovementEntries = doc.autoMovementEntries ? doc.autoMovementEntries : [];
+            for (var ac of doc.autoMovementEntries) { if (ac >= 5) { autoCnt += 1; } }
+            doc["noAutoMovementEntries"] = autoCnt;
+
+
+            doc.autoFetalMovement = doc.autoFetalMovement ? doc.autoFetalMovement : [];
+            doc["noAutoFetalMovement"] = doc.autoFetalMovement.length;
+
+
+            var mcnt = 0;
+            doc.movementEntries = doc.movementEntries ? doc.movementEntries : [];
+            for (var mc of doc.movementEntries) { if (mc >= 5) { mcnt += 1; } }
+            doc["noMovementEntries"] = mcnt;
+            doc["age"] = momDict[doc.motherId] ? momDict[doc.motherId] : 0;
+            if (doc.tocoEntries &amp;&amp; typeof doc.tocoEntries === 'string') { doc.tocoEntries = JSON.parse(doc.tocoEntries); }
+            doc.testType = (doc.tocoEntries) &amp;&amp; (doc.tocoEntries.length) &amp;&amp; (average(doc.tocoEntries) > 1) ? "CTG" : "NST";
+            delete doc.autoMovementEntries;
+            delete doc.movementEntries;
+            finalLst.push(doc);
+        }
+        //console.log("momDict", momDict);
+        res.status(200).json({
+            message: "Tests fetched successfully!",
+            data: finalLst,
+            count: finalLst.length
+        });
+    }).catch(error => {
+        console.error(error);
+        res.status(500).json({ message: "Fetching Tests failed!" });
+    });
+};
+
+
+
+
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-aggregations.html">aggregations</a></li><li><a href="module-analytics_admin_dashboard.html">analytics/admin_dashboard</a></li><li><a href="module-analytics_doctor_dashboard.html">analytics/doctor_dashboard</a></li><li><a href="module-config.html">config</a></li><li><a href="module-general.html">general</a></li><li><a href="module-mis_device-mis.html">mis/device-mis</a></li><li><a href="module-mis_doctor-mis.html">mis/doctor-mis</a></li><li><a href="module-mis_mother-mis.html">mis/mother-mis</a></li><li><a href="module-mis_organization-mis.html">mis/organization-mis</a></li><li><a href="module-mis_test-mis.html">mis/test-mis</a></li><li><a href="module-models_audio.html">models/audio</a></li><li><a href="module-models_babybeat.html">models/babybeat</a></li><li><a href="module-models_dataset.html">models/dataset</a></li><li><a href="module-models_devices.html">models/devices</a></li><li><a href="module-models_notifications.html">models/notifications</a></li><li><a href="module-models_tests.html">models/tests</a></li><li><a href="module-models_users.html">models/users</a></li><li><a href="module-models_validTests.html">models/validTests</a></li><li><a href="module-routes_aggregation.html">routes/aggregation</a></li><li><a href="module-routes_analytics.html">routes/analytics</a></li><li><a href="module-routes_general.html">routes/general</a></li><li><a href="module-routes_graph.html">routes/graph</a></li><li><a href="module-routes_mis.html">routes/mis</a></li><li><a href="module-routes_search.html">routes/search</a></li><li><a href="module-search_search.html">search/search</a></li></ul><h3>Global</h3><ul><li><a href="global.html#configValue">configValue</a></li><li><a href="global.html#databaseName">databaseName</a></li><li><a href="global.html#logger">logger</a></li><li><a href="global.html#normalizePort">normalizePort</a></li><li><a href="global.html#onError">onError</a></li><li><a href="global.html#onListening">onListening</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#server">server</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Feb 26 2025 14:40:32 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

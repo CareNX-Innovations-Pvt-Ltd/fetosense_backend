@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: server.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: server.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @file server.js
+ * @description Entry point for the Fetosense backend server. Handles HTTP/HTTPS server creation and starts the application.
+ */
+
+const app = require("./app");
+const debug = require("debug")("node-angular");
+const http = require("http");
+var https = require('https');
+var fs = require('fs');
+const config = require('./config');
+
+/**
+ * Normalize a port into a number, string, or false.
+ * @function normalizePort
+ * @param {string|number} val - The port value from the environment or configuration.
+ * @returns {number|string|boolean} - The normalized port number, named pipe, or false if invalid.
+ */
+
+// var privateKey = fs.readFileSync("key.pem", 'utf8');
+// var certificate = fs.readFileSync("cert.pem", 'utf8');
+// var credentials = { key: privateKey, cert: certificate };
+const normalizePort = val => {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+};
+
+/**
+ * Event listener for HTTP server "error" event.
+ * @function onError
+ * @param {Error} error - The error object.
+ * @throws {Error} - Throws the error if it is not related to listening.
+ */
+
+const onError = error => {
+  if (error.syscall !== "listen") {
+    throw error;
+  }
+  const bind = typeof addr === "string" ? "pipe " + addr : "port " + port;
+  switch (error.code) {
+    case "EACCES":
+      console.error(bind + " requires elevated privileges");
+      process.exit(1);
+      break;
+    case "EADDRINUSE":
+      console.error(bind + " is already in use");
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+};
+
+/**
+ * Event listener for HTTP server "listening" event.
+ * @function onListening
+ */
+    
+const onListening = () => {
+  const addr = server.address();
+  const bind = typeof addr === "string" ? "pipe " + addr : "port " + port;
+  debug("Listening on " + bind);
+};
+
+/**
+ * Port number for the server, retrieved from environment variables or configuration.
+ * @constant {number|string} port
+ */
+
+
+const port = normalizePort(process.env.PORT || config.configValue.port);
+app.set("port", port);
+
+/**
+ * The HTTP or HTTPS server instance.
+ * @constant {http.Server|https.Server} server
+ */
+
+var server = null;
+if (config.configValue.SSLHost) {
+  console.log("SSLPrivateKey", config.configValue.SSLPrivateKey, "SSLCertificate", config.configValue.SSLCertificate);
+  server = https.createServer({
+    key: fs.readFileSync(config.configValue.SSLPrivateKey, 'utf8'),
+    cert: fs.readFileSync(config.configValue.SSLCertificate, 'utf8'),
+  }, app);
+}
+else {
+  server = http.createServer(app);
+}
+server.on("error", onError);
+server.on("listening", onListening);
+//,'192.168.0.103'
+
+/**
+ * Start the server and listen on the specified port.
+ */
+
+server.listen(port,() => console.info(`Server has started on ${port}`))
+
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-aggregations.html">aggregations</a></li><li><a href="module-analytics_admin_dashboard.html">analytics/admin_dashboard</a></li><li><a href="module-analytics_doctor_dashboard.html">analytics/doctor_dashboard</a></li><li><a href="module-config.html">config</a></li><li><a href="module-general.html">general</a></li><li><a href="module-mis_device-mis.html">mis/device-mis</a></li><li><a href="module-mis_doctor-mis.html">mis/doctor-mis</a></li><li><a href="module-mis_mother-mis.html">mis/mother-mis</a></li><li><a href="module-mis_organization-mis.html">mis/organization-mis</a></li><li><a href="module-mis_test-mis.html">mis/test-mis</a></li><li><a href="module-models_audio.html">models/audio</a></li><li><a href="module-models_babybeat.html">models/babybeat</a></li><li><a href="module-models_dataset.html">models/dataset</a></li><li><a href="module-models_devices.html">models/devices</a></li><li><a href="module-models_notifications.html">models/notifications</a></li><li><a href="module-models_tests.html">models/tests</a></li><li><a href="module-models_users.html">models/users</a></li><li><a href="module-models_validTests.html">models/validTests</a></li><li><a href="module-routes_aggregation.html">routes/aggregation</a></li><li><a href="module-routes_analytics.html">routes/analytics</a></li><li><a href="module-routes_general.html">routes/general</a></li><li><a href="module-routes_graph.html">routes/graph</a></li><li><a href="module-routes_mis.html">routes/mis</a></li><li><a href="module-routes_search.html">routes/search</a></li><li><a href="module-search_search.html">search/search</a></li></ul><h3>Global</h3><ul><li><a href="global.html#configValue">configValue</a></li><li><a href="global.html#databaseName">databaseName</a></li><li><a href="global.html#logger">logger</a></li><li><a href="global.html#normalizePort">normalizePort</a></li><li><a href="global.html#onError">onError</a></li><li><a href="global.html#onListening">onListening</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#server">server</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Feb 26 2025 14:40:32 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
+
+
