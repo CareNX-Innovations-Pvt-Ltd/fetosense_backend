@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: mis/doctor_mis.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: mis/doctor_mis.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*jshint esversion: 6 */
+
+/**
+ * @file mis/doctor-mis.js
+ * @module mis/doctor-mis
+ * @description Fetches doctor-related data based on filters.
+ */
+
+const Devices = require("../models/users"); // Import devices model
+const general=require("../general/general");
+
+/**
+ * Fetches doctor data based on filters.
+ * 
+ * - Filters doctors based on date range and organization ID.
+ * - Ensures only non-deleted doctors are retrieved.
+ * 
+ * @function getData
+ * @param {Object} req - Express request object containing:
+ *   @param {string} [req.body.fromDate] - The start date for filtering doctors.
+ *   @param {string} [req.body.toDate] - The end date for filtering doctors.
+ *   @param {string} [req.body.organizationId] - The organization ID to filter doctors.
+ * @param {Object} res - Express response object used to send HTTP responses.
+ * @param {Function} next - Express next function (not used in this function).
+ * @returns {void} - Sends the filtered doctor data or an error response.
+ */
+
+exports.getData = (req, res, next) => {
+    const fromDate = req.body.fromDate ? new Date(req.body.fromDate):null;
+    const toDate = req.body.toDate ? new Date(req.body.toDate):null;
+    const organization=req.body.organizationId;
+     var query={
+        "type":"doctor",
+        "delete": false
+    }
+
+    if (organization) {
+        query["organizationId"] = organization
+    }
+
+    if (req.body.fromDate != 'undefined' &amp;&amp; req.body.fromDate != null) {
+        query["createdOn"] = { "$gte": fromDate, "$lt": toDate }
+    }
+    else {
+        query["createdOn"] = { "$lte": toDate }
+    }
+      
+    const deviceQuery = Devices.find(query);
+    deviceQuery.then(documents => {
+        res.status(200).json({
+            message: "Doctor fetched successfully!",
+            data: documents,
+            count: documents.length
+        });
+    })
+        .catch(error => {
+            console.log("Error", error);
+            res.status(500).json({
+                message: "Fetching Doctor failed!"
+            });
+        });
+};
+
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-aggregations.html">aggregations</a></li><li><a href="module-analytics_admin_dashboard.html">analytics/admin_dashboard</a></li><li><a href="module-analytics_doctor_dashboard.html">analytics/doctor_dashboard</a></li><li><a href="module-config.html">config</a></li><li><a href="module-general.html">general</a></li><li><a href="module-mis_device-mis.html">mis/device-mis</a></li><li><a href="module-mis_doctor-mis.html">mis/doctor-mis</a></li><li><a href="module-mis_mother-mis.html">mis/mother-mis</a></li><li><a href="module-mis_organization-mis.html">mis/organization-mis</a></li><li><a href="module-mis_test-mis.html">mis/test-mis</a></li><li><a href="module-models_audio.html">models/audio</a></li><li><a href="module-models_babybeat.html">models/babybeat</a></li><li><a href="module-models_dataset.html">models/dataset</a></li><li><a href="module-models_devices.html">models/devices</a></li><li><a href="module-models_notifications.html">models/notifications</a></li><li><a href="module-models_tests.html">models/tests</a></li><li><a href="module-models_users.html">models/users</a></li><li><a href="module-models_validTests.html">models/validTests</a></li><li><a href="module-routes_aggregation.html">routes/aggregation</a></li><li><a href="module-routes_analytics.html">routes/analytics</a></li><li><a href="module-routes_general.html">routes/general</a></li><li><a href="module-routes_graph.html">routes/graph</a></li><li><a href="module-routes_mis.html">routes/mis</a></li><li><a href="module-routes_search.html">routes/search</a></li><li><a href="module-search_search.html">search/search</a></li></ul><h3>Global</h3><ul><li><a href="global.html#configValue">configValue</a></li><li><a href="global.html#databaseName">databaseName</a></li><li><a href="global.html#logger">logger</a></li><li><a href="global.html#normalizePort">normalizePort</a></li><li><a href="global.html#onError">onError</a></li><li><a href="global.html#onListening">onListening</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#server">server</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Feb 26 2025 14:40:32 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

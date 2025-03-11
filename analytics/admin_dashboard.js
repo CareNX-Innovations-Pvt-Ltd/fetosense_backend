@@ -1,3 +1,9 @@
+/**
+ * @file analytics/admin_dashboard.js
+ * @module analytics/admin_dashboard
+ * @description Functions for fetching and processing admin dashboard analytics.
+ */
+
 const users = require("../models/users"); // Import user model
 const dataset = require("../models/dataset"); // Import dataset model
 const devices = require("../models/devices"); // Import devices model
@@ -7,6 +13,15 @@ const ValidTests = require("../models/valid_tests"); // Import ValidTests model
 const general = require("../general/general"); // import general functions
 
 const set2Digit = general.set2Digit;
+
+/**
+ * Handles fetching of dashboard data.
+ * @function getDashboardData
+ * @param {Object} req - Express request object containing `documentId`, `fromDate`, and `toDate`.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next function.
+ */
+
 exports.getDashboardData = (req, res, next) => {
     var loginUserId = req.body.documentId;
     var fromDate = req.body.fromDate ? new Date(req.body.fromDate) : null;
@@ -37,6 +52,15 @@ exports.getDashboardData = (req, res, next) => {
     });
 }
 
+/**
+ * Fetches dashboard analytics data.
+ * @function getDashboardData
+ * @param {string} loginUserId - The ID of the logged-in user.
+ * @param {Date|null} fromDate - The start date for analytics filtering.
+ * @param {Date|null} toDate - The end date for analytics filtering.
+ * @returns {Promise<Object>} - A promise resolving to the dashboard analytics data.
+ */
+
 function getDashboardData(loginUserId, fromDate, toDate) {
     var retDict = { "totalDoctors": 0, "totalDevices": 0, "totalOrgs": 0, "totalMothers": 0, "totalTests": 0, "totalMothersSmsSent":0, "totalMotherRegPlatform":0 };
     return new Promise((resolve, reject) => {
@@ -53,6 +77,15 @@ function getDashboardData(loginUserId, fromDate, toDate) {
         });
     });
 }
+
+/**
+ * Aggregates direct analytics data.
+ * @function getDirectAnalytics
+ * @param {Object} retDict - The dictionary to store aggregated values.
+ * @param {Date|null} fromDate - The start date for filtering.
+ * @param {Date|null} toDate - The end date for filtering.
+ * @returns {Promise<Object>} - A promise resolving to the aggregated analytics data.
+ */
 
 function getDirectAnalytics(retDict, fromDate, toDate) {
     return new Promise((resolve, reject) => {
@@ -218,6 +251,14 @@ function getDirectAnalytics(retDict, fromDate, toDate) {
 
 // }
 
+/**
+ * Prepares a trend report based on mother registrations and tests taken.
+ * @function prepareTrend
+ * @param {Date} startDate - The start date for the trend.
+ * @param {Date} endDate - The end date for the trend.
+ * @returns {Promise<Array<Object>>} - A promise resolving to an array of trend data.
+ */
+
 function prepareTrend(startDate, endDate) {
     var qry = [
         { "$match": { "type": "mother", "createdOn": { "$gte": startDate, "$lte": endDate } } },
@@ -330,6 +371,7 @@ function prepareTrend(startDate, endDate) {
                                 curDate.setDate(curDate.getDate() + 1);
                             }
                             // console.log("Data in prepareTrend before resolve:", finalLst);
+                            //data coming correct
                             return resolve(finalLst);
                         }).catch(err => {
                             reject(err);

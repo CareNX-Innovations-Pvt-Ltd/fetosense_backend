@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: general/general.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: general/general.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*jshint esversion: 6 */
+
+/**
+ * @file general.js
+ * @module general
+ * @description General utility functions and configurations used across the application.
+ */
+
+const users = require("../models/users"); // Import user model
+const dataset = require("../models/dataset"); // Import dataset model
+const devices = require("../models/devices"); // Import devices model
+const notifications = require("../models/notifications"); // Import notifications model
+const tests = require("../models/tests"); // Import tests model
+const audio = require("../models/audio"); // Import audio model
+const ValidTests = require("../models/valid_tests"); // Import ValidTests model
+
+var request = require('request');
+
+var config = require("../config");
+
+var log = require('../logger.js').LOG;
+const apiKeys = require("../apiKeys.json"); // Import Tracker Model
+
+/**
+ * Firestore API URL for updating data.
+ * @constant {string}
+ */
+
+const firestoreApiUrl = "https://us-central1-" + config.configValue.projectId + ".cloudfunctions.net/updateToFirestore/";
+
+/**
+ * Object mapping collection names to their respective models.
+ * @constant {Object}
+ */
+
+const collections = {
+    'users': users,
+    'dataset': dataset,
+    'devices': devices,
+    "notifications": notifications,
+    "tests": tests,
+    "ValidTests": ValidTests,
+    "audio": audio
+};
+
+/**
+ * Parses JSON date strings into JavaScript `Date` objects.
+ * This function supports both ISO 8601 and Microsoft AJAX date formats.
+ * 
+ * @function JSON.dateParser
+ * @param {string} key - The key of the JSON object being parsed.
+ * @param {string|any} value - The value associated with the key, which may be a date string.
+ * @returns {Date|any} - A `Date` object if the value is a recognized date string; otherwise, the original value.
+ */
+
+JSON.dateParser = function (key, value) {
+    var reISO = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}(?:\.\d*))(?:Z|(\+|-)([\d|:]*))?$/;
+    var reMsAjax = /^\/Date\((d|-|.*)\)[\/|\\]$/;
+    if (typeof value === 'string') {
+        var a = reISO.exec(value);
+        if (a)
+            return new Date(value);
+        a = reMsAjax.exec(value);
+        if (a) {
+            var b = a[1].split(/[-+,.]/);
+            return new Date(b[0] ? +b[0] : 0 - +b[1]);
+        }
+    }
+    return value;
+};
+
+/**
+ * Inserts data into a specified MongoDB collection.
+ * Supports both single document insertion and bulk insertions for arrays.
+ * 
+ * @async
+ * @function mongoInsert
+ * @param {Object} req - Express request object containing `data` (JSON string) and `collection` name.
+ * @param {Object} res - Express response object used to send HTTP responses.
+ * @param {Function} next - Express next function (not used in this function).
+ * @returns {Promise&lt;void>} - Sends a response indicating success or failure.
+ */
+
+exports.mongoInsert = async (req, res, next) => {
+    // get post body parameter
+    console.log("Insertig data");
+    var data = req.body.data;
+    var collection = req.body.collection;
+    try {
+        checkApiKeys(req.body, ["Admin"]);
+    }
+    catch (err) {
+        console.error("Error", err);
+        return res.status(401).json({
+            message: "Unauthorised",
+            statusCode: 401,
+            err: err
+        });
+    }
+    data = JSON.parse(data, JSON.dateParser);
+    if (data.constructor === Array) {
+        for (elm of data) {
+            await new Promise((resolve, reject) => {
+                insertDataToMongoDB(elm, collection)
+                    .then(() => { resolve() })
+                    .catch(err => {
+                        res.status(400).json({
+                            message: "Error",
+                            statusCode: 400,
+                            err: err
+                        }); reject(err)
+                    });
+            })
+        }
+        return res.status(200).json({
+            message: "Records Updated",
+            statusCode: 200
+        });
+    }
+    else {
+        insertDataToMongoDB(data, collection).then((retStr) => {
+            return res.status(200).json({
+                message: retStr,
+                statusCode: 200
+            });
+        }).catch(err => {
+            console.error(err);
+            return res.status(400).json({
+                message: "Error",
+                statusCode: 400,
+                err: err
+            });
+        });
+    }
+};
+
+/**
+ * Inserts or updates a document in the specified MongoDB collection.
+ * 
+ * - If the document does not exist, it is inserted.
+ * - If `_id` is not provided but `documentId` exists, `_id` is set to `documentId`.
+ * - Uses `findOneAndUpdate` with `upsert` to ensure data is inserted or updated as needed.
+ * 
+ * @function insertDataToMongoDB
+ * @param {Object} data - The document data to insert or update.
+ * @param {string} collection - The name of the collection where data should be inserted.
+ * @returns {Promise&lt;string>} - Resolves with a success message if the insertion is successful, otherwise rejects with an error.
+ */
+
+function insertDataToMongoDB(data, collection) {
+    return new Promise((resolve, reject) => {
+        //console.log(data);
+        if (!(data &amp;&amp; collection &amp;&amp; data.documentId &amp;&amp; collections[collection])) {
+            console.log("Found Err", data, collection);
+            return reject(new Error("bad request, data provided is improper."));
+        }
+        log.info("{datetime:'" + new Date().toISOString() + "', collection:'" + collection + "', documentId:'" + data.documentId + "'}");
+
+        if (!("_id" in data) &amp;&amp; ("documentId" in data)) { data["_id"] = data["documentId"].toString() }
+        var options = { upsert: true, new: true, setDefaultsOnInsert: false, useFindAndModify: false };
+        var userQuery = collections[collection].findOneAndUpdate({ "_id": data["documentId"] }, data, options);
+        userQuery.then(() => {
+            return resolve("Data inserted properly");
+        }).catch(error => {
+            console.log(error, 'error')
+            log.error(error);
+            return reject(error);
+        });
+    });
+}
+
+/**
+ * Performs an aggregation query on a specified MongoDB collection.
+ * 
+ * - Validates API keys before executing the aggregation.
+ * - Supports stringified and direct JSON queries.
+ * - Uses `.maxTime(60000)` to prevent long-running queries.
+ * 
+ * @function mongoAggregate
+ * @param {Object} req - Express request object containing `query` (aggregation pipeline) and `collection` name.
+ * @param {Object} res - Express response object used to send HTTP responses.
+ * @param {Function} next - Express next function (not used in this function).
+ * @returns {void} - Sends the aggregation result or an error response.
+ */
+
+exports.mongoAggregate = (req, res, next) => {
+    // get post body parameter
+    var query = req.body.query;
+    var collection = req.body.collection;
+    try {
+        checkApiKeys(req.body, ["Admin"]);
+    } catch (err) {
+        return res.status(401).json({
+            message: "Unauthorised",
+            statusCode: 401,
+            err: err
+        });
+    }
+    if (query.constructor == String) {
+        query = JSON.parse(query, JSON.dateParser);
+    } else {
+        query = JSON.parse(JSON.stringify(query), JSON.dateParser);
+    }
+
+    if (!(query &amp;&amp; collection &amp;&amp; collections[collection])) {
+        return res.status(400).json({
+            message: "bad request, data provided is improper.",
+            statusCode: 400
+        });
+    }
+    var userQuery = collections[collection].aggregate(query).maxTime(60000);
+    userQuery.then((result) => {
+        res.status(200).json(result);
+    }).catch(error => {
+        console.log(error, 'error')
+        log.error(error);
+        try {
+            res.status(500).json({
+                message: "Internal Server Error",
+                error: JSON.stringify(error)
+            });
+        } catch (err) {
+            console.log("err", err);
+        }
+    });
+};
+
+/**
+ * Performs a `find` query on a specified MongoDB collection.
+ * 
+ * - Validates API keys before executing the query.
+ * - Supports stringified and direct JSON queries.
+ * - Allows query projection and query options (e.g., sorting, limiting).
+ * - Uses `.maxTime(60000)` to prevent long-running queries.
+ * 
+ * @function mongoFind
+ * @param {Object} req - Express request object containing:
+ *   @param {Object|string} req.body.query - The MongoDB query filter.
+ *   @param {Object|string} [req.body.project] - Fields to project in the response.
+ *   @param {Object|string} [req.body.options] - Additional query options (e.g., limit, sort).
+ *   @param {string} req.body.collection - The collection name.
+ * @param {Object} res - Express response object used to send HTTP responses.
+ * @param {Function} next - Express next function (not used in this function).
+ * @returns {void} - Sends the query result or an error response.
+ */
+
+exports.mongoFind = (req, res, next) => {
+    // get post body parameter
+    // reqDummy = {
+    //     "query": { "modifiedTimeStamp": { "$gt": 0 } },
+    //     "project": { "documentId": 1, "modifiedTimeStamp": 1 },
+    //     "options": { "limit": 4, "sort": { "modifiedTimeStamp": -1 } },
+    //     "collection": "Users",
+    //     "apiKey": ""
+    // }
+
+    var query = req.body.query;
+    var options = req.body.options;
+    var project = req.body.project;
+    var collection = req.body.collection;
+    console.log("query", query, "options", options, "project", project, "collection", collection);
+    try {
+        checkApiKeys(req.body, ["Admin"]);
+    } catch (err) {
+        return res.status(401).json({
+            message: "Unauthorised",
+            statusCode: 401,
+            err: err
+        });
+    }
+    if (query.constructor == String) {
+        query = JSON.parse(query, JSON.dateParser);
+    } else {
+        query = JSON.parse(JSON.stringify(query), JSON.dateParser);
+    }
+
+    if (options &amp;&amp; options.constructor == String) {
+        options = JSON.parse(options, JSON.dateParser);
+        options['maxTime'] = 60000;
+    }
+    if (project &amp;&amp; project.constructor == String) {
+        project = JSON.parse(project, JSON.dateParser);
+    }
+
+    if (!(query &amp;&amp; collection &amp;&amp; collections[collection])) {
+        return res.status(400).json({
+            message: "bad request, data provided is improper.",
+            statusCode: 400
+        });
+    }
+    var userQuery = collections[collection];
+    if (!project) { project = null; }
+    if (options) { userQuery = userQuery.find(query, project, options); } else { userQuery = userQuery.find(query, project); }
+
+    userQuery.maxTime(60000).then((result) => {
+        res.status(200).json(result);
+    }).catch(error => {
+        console.log(error, 'error')
+        try {
+            res.status(500).json({
+                message: "Internal Server Error",
+                error: JSON.stringify(error)
+            });
+        } catch (err) {
+            console.log("err", err);
+        }
+    });
+};
+
+/**
+ * Updates data in a specified MongoDB collection.
+ * 
+ * - Validates API keys before executing the update.
+ * - Supports both single document updates and bulk updates for arrays.
+ * - Uses `updateDataToMongoDB` for performing updates.
+ * 
+ * @async
+ * @function mongoUpdate
+ * @param {Object} req - Express request object containing:
+ *   @param {Object|string} req.body.data - The data to update (can be an object or an array of objects).
+ *   @param {string} req.body.collection - The name of the collection where data should be updated.
+ * @param {Object} res - Express response object used to send HTTP responses.
+ * @param {Function} next - Express next function (not used in this function).
+ * @returns {Promise&lt;void>} - Sends a response indicating success or failure.
+ */
+
+exports.mongoUpdate = async (req, res, next) => {
+    // get post body parameter
+    var data = req.body.data;
+    var collection = req.body.collection;
+    try {
+        checkApiKeys(req.body, ["Admin"]);
+    }
+    catch (err) {
+        return res.status(401).json({
+            message: "Unauthorised",
+            statusCode: 401,
+            err: err
+        });
+    }
+    if (data.constructor === Object) {
+        data = JSON.stringify(data);
+    }
+    data = JSON.parse(data, JSON.dateParser);
+    if (data.constructor === Array) {
+        for (elm of data) {
+            await new Promise((resolve, reject) => {
+                updateDataToMongoDB(elm, collection)
+                    .then(() => { resolve() })
+                    .catch(err => {
+                        res.status(400).json({
+                            message: "Error",
+                            statusCode: 400,
+                            err: err
+                        }); reject(err)
+                    });
+            })
+        }
+        return res.status(200).json({
+            message: "Records Updated",
+            statusCode: 200
+        });
+    }
+    else {
+        updateDataToMongoDB(data, collection).then((retStr) => {
+            return res.status(200).json({
+                message: retStr,
+                statusCode: 200
+            });
+        }).catch(err => {
+            return res.status(400).json({
+                message: "Error",
+                statusCode: 400,
+                err: err
+            });
+        });
+    }
+};
+
+/**
+ * Updates an existing document in a specified MongoDB collection.
+ * 
+ * - Logs the update operation with a timestamp.
+ * - Uses `update` to modify an existing document.
+ * - Rejects if required parameters (`data`, `collection`, `documentId`) are missing.
+ * 
+ * @function updateDataToMongoDB
+ * @param {Object} data - The document data to update.
+ * @param {string} collection - The name of the collection where data should be updated.
+ * @returns {Promise&lt;string>} - Resolves with a success message if the update is successful, otherwise rejects with an error.
+ */
+
+function updateDataToMongoDB(data, collection) {
+    return new Promise((resolve, reject) => {
+        //console.log(data);
+        if (!(data &amp;&amp; collection &amp;&amp; data.documentId &amp;&amp; collections[collection])) {
+            console.log("Found Err", "bad request, data provided is improper.");
+            return reject(new Error("bad request, data provided is improper."));
+        }
+        log.info("{datetime:'" + new Date().toISOString() + "', collection:'" + collection + "', documentId:'" + data.documentId + "'}");
+
+        //if (!("_id" in data) &amp;&amp; ("documentId" in data)) { data["_id"] = data["documentId"].toString() }
+        var options = { multi: false };
+        var userQuery = collections[collection].update({ "documentId": data["documentId"] }, data, options);
+        userQuery.then(() => {
+            return resolve("Data updated properly");
+        }).catch(error => {
+            console.log(error, 'error')
+            log.error(error);
+            return reject(error);
+        });
+    });
+}
+
+/**
+ * Deletes documents from a specified MongoDB collection based on a query.
+ * 
+ * - Validates API keys before executing the delete operation.
+ * - Supports stringified and direct JSON queries.
+ * - Uses `deleteMany` to remove all matching documents.
+ * 
+ * @function mongoDelete
+ * @param {Object} req - Express request object containing:
+ *   @param {Object|string} req.body.query - The MongoDB query filter for deletion.
+ *   @param {string} req.body.collection - The collection name from which documents should be deleted.
+ * @param {Object} res - Express response object used to send HTTP responses.
+ * @param {Function} next - Express next function (not used in this function).
+ * @returns {void} - Sends the delete result or an error response.
+ */
+
+exports.mongoDelete = (req, res, next) => {
+    // get post body parameter
+    // reqDummy = {
+    //     "query": { "modifiedTimeStamp": { "$gt": 0 } },
+    //     "project": { "documentId": 1, "modifiedTimeStamp": 1 },
+    //     "options": { "limit": 4, "sort": { "modifiedTimeStamp": -1 } },
+    //     "collection": "Users",
+    //     "apiKey": ""
+    // }
+
+    var query = req.body.query;
+    var collection = req.body.collection;
+    console.log("query", query, "collection", collection);
+    try {
+        checkApiKeys(req.body, ["Admin"]);
+    } catch (err) {
+        return res.status(401).json({
+            message: "Unauthorised",
+            statusCode: 401,
+            err: err
+        });
+    }
+    if (query.constructor == String) {
+        query = JSON.parse(query, JSON.dateParser);
+    } else {
+        query = JSON.parse(JSON.stringify(query), JSON.dateParser);
+    }
+    if (!(query &amp;&amp; collection &amp;&amp; collections[collection])) {
+        return res.status(400).json({
+            message: "bad request, data provided is improper.",
+            statusCode: 400
+        });
+    }
+    var userQuery = collections[collection];
+    userQuery = userQuery.deleteMany(query);
+    userQuery.then((result) => {
+        res.status(200).json(result);
+    }).catch(error => {
+        console.log(error, 'error')
+        try {
+            res.status(500).json({
+                message: "Internal Server Error",
+                error: JSON.stringify(error)
+            });
+        } catch (err) {
+            console.log("err", err);
+        }
+    });
+};
+
+/**
+ * Sends an HTTP request from the server with JSON data.
+ * 
+ * - Supports `GET`, `POST`, `PUT`, and `DELETE` methods.
+ * - Validates API keys before executing the request.
+ * - Parses stringified JSON data if necessary.
+ * - Logs debug information if `debug` is enabled.
+ * 
+ * @function sendRequestFromServerJSON
+ * @param {Object} req - Express request object containing:
+ *   @param {string} req.body.url - The URL to which the request should be sent.
+ *   @param {Object|string} req.body.data - The request payload (can be a JSON object or a string).
+ *   @param {string} req.body.method - The HTTP method (`GET`, `POST`, `PUT`, `DELETE`).
+ *   @param {boolean} [req.body.debug] - If `true`, logs request details for debugging.
+ * @param {Object} res - Express response object used to send HTTP responses.
+ * @param {Function} next - Express next function (not used in this function).
+ * @returns {void} - Sends the request response or an error response.
+ */
+
+exports.sendRequestFromServerJSON = (req, res, next) => {
+    const url = req.body.url;
+    var requestData = req.body.data;
+    const method = req.body.method;
+    const debug = req.body.debug;
+    if (debug) {
+        console.log("url", url, "requestData", requestData, "method", method, "debug", debug);
+    }
+    if (requestData.constructor == String) { requestData = JSON.parse(requestData); }
+    try {
+        checkApiKeys(req.body, ["Admin"]);
+    } catch (err) {
+        return res.status(401).json({
+            message: "Unauthorised",
+            statusCode: 401,
+            err: err
+        });
+    }
+    var options = {
+        method: method,
+        url: url,
+        json: requestData
+    };
+
+    request(options, function (error, response, body) {
+        if (error) {
+            return res.status(401).json({
+                message: "Unauthorised",
+                statusCode: 401,
+                err: err
+            });
+        }
+        else {
+            return res.status(200).json({
+                message: body,
+                statusCode: 200
+            });
+        }
+    });
+}
+
+/**
+ * Updates data in a Firestore collection by sending a POST request.
+ * 
+ * - Converts the data object to a JSON string before sending.
+ * - Uses `sendPostRequest` to send the request to Firestore.
+ * 
+ * @function updateToFirestore
+ * @param {string} collection - The Firestore collection to update.
+ * @param {Object|Array} data - The data to be updated in Firestore (can be an object or an array of objects).
+ * @returns {Promise&lt;Object>} - A promise resolving to the Firestore update response.
+ */
+
+function updateToFirestore(collection, data) {
+    data = JSON.stringify(data);
+    return sendPostRequest(firestoreApiUrl, { "collection": collection, "data": data });
+}
+exports.updateToFirestore = updateToFirestore;
+
+/**
+ * Sends an HTTP POST request with form-urlencoded data.
+ * 
+ * - Uses the `request` module to send a POST request.
+ * - Sets headers to disable caching and specify content type.
+ * - Resolves on success, rejects on failure.
+ * 
+ * @function sendPostRequest
+ * @param {string} url - The URL to send the POST request to.
+ * @param {Object} requestData - The data to be sent in the request body.
+ * @returns {Promise&lt;void>} - A promise that resolves when the request is successful, or rejects with an error.
+ */
+
+function sendPostRequest(url, requestData) {
+    return new Promise((resolve, reject) => {
+        var options = {
+            method: 'POST',
+            url: url,
+            headers:
+            {
+                'cache-control': 'no-cache',
+                'content-type': 'application/x-www-form-urlencoded'
+            },
+            form: requestData
+        };
+
+        request(options, function (error, response, body) {
+            if (error) { reject(error); throw new Error(error) };
+            resolve();
+        });
+    });
+}
+exports.sendPostRequest = sendPostRequest;
+
+/**
+ * Validates API keys for authentication.
+ * 
+ * - Checks if the provided API key exists in the allowed user roles.
+ * - Throws an error if the API key is missing or invalid.
+ * 
+ * @function checkApiKeys
+ * @param {Object} data - The request data containing the `apiKey`.
+ * @param {string[]} allowdUsers - An array of allowed user roles that can access the API.
+ * @throws {Error} Throws an error if the API key is missing or invalid.
+ * @returns {boolean} - Returns `true` if the API key is valid.
+ */
+
+function checkApiKeys(data, allowdUsers) {
+    var keySet = [];
+    var apiKey;
+    //console.log(data,allowdUsers,apiKeys )
+    if ("apiKey" in data &amp;&amp; allowdUsers &amp;&amp; apiKeys) {
+        apiKey = data["apiKey"];
+    } else {
+        throw new Error("Unauthorised");
+    }
+    for (user in apiKeys) {
+        if (allowdUsers.includes(user) || allowdUsers.includes("Any")) {
+            keySet = keySet.concat(apiKeys[user]);
+        }
+    }
+    if (keySet.includes(apiKey)) {
+        return true;
+    } else {
+        throw new Error("Unautenticated");
+    }
+}
+
+exports.checkApiKeys = checkApiKeys;
+
+/**
+ * Formats a number to ensure it is always two digits.
+ * 
+ * - Converts a single-digit number to a two-digit string by prefixing it with `0`.
+ * - If the number is already two digits, it remains unchanged.
+ * 
+ * @function set2Digit
+ * @param {number} num - The number to format.
+ * @returns {string} - A two-digit formatted string representation of the number.
+ */
+
+function set2Digit(num) {
+    return ("0" + num).substr(-2);
+}
+exports.set2Digit = set2Digit;
+
+/**
+ * Creates a deep copy of an object, array, or date.
+ * 
+ * - Handles primitive values, `null`, and `undefined`.
+ * - Recursively clones arrays and objects.
+ * - Copies `Date` objects by preserving their timestamps.
+ * - Throws an error if the object type is unsupported.
+ * 
+ * @function clone
+ * @param {any} obj - The object to clone.
+ * @throws {Error} Throws an error if the object's type isn't supported.
+ * @returns {any} - A deep copy of the provided object.
+ */
+
+function clone(obj) {
+    var copy;
+
+    // Handle the 3 simple types, and null or undefined
+    if (null == obj || "object" != typeof obj) return obj;
+
+    // Handle Date
+    if (obj instanceof Date) {
+        copy = new Date();
+        copy.setTime(obj.getTime());
+        return copy;
+    }
+
+    // Handle Array
+    if (obj instanceof Array) {
+        copy = [];
+        for (var i = 0, len = obj.length; i &lt; len; i++) {
+            copy[i] = clone(obj[i]);
+        }
+        return copy;
+    }
+
+    // Handle Object
+    if (obj instanceof Object) {
+        copy = {};
+        for (var attr in obj) {
+            if (obj.hasOwnProperty(attr)) copy[attr] = clone(obj[attr]);
+        }
+        return copy;
+    }
+
+    throw new Error("Unable to copy obj! Its type isn't supported.");
+}
+
+exports.clone = clone;
+
+/**
+ * Sorts an array of objects based on a specified key.
+ * 
+ * - Uses a comparator function to sort values in ascending order.
+ * - Supports numeric and string-based sorting.
+ * 
+ * @function sortByKey
+ * @param {Object[]} array - The array of objects to be sorted.
+ * @param {string} key - The key in each object used for sorting.
+ * @returns {Object[]} - The sorted array.
+ */
+
+exports.sortByKey = function (array, key) {
+    return array.sort(function (a, b) {
+        var x = a[key]; var y = b[key];
+        return ((x &lt; y) ? -1 : ((x > y) ? 1 : 0));
+    });
+}
+
+/**
+ * Sorts an array of objects based on how closely a key's value matches a given phrase.
+ * 
+ * - Prioritizes values that start with the given phrase.
+ * - Gives secondary priority to values that contain the phrase after a space.
+ * - Performs case-insensitive comparisons.
+ * 
+ * @function sortByKeyStartsWith
+ * @param {Object[]} array - The array of objects to be sorted.
+ * @param {string} key - The key in each object used for sorting.
+ * @param {string} phrase - The phrase to prioritize in sorting.
+ * @returns {Object[]} - The sorted array.
+ */
+
+exports.sortByKeyStartsWith = function (array, key, phrase) {
+    return array.sort(function (a, b) {
+        var x = a[key].toLowerCase(); var y = b[key].toLowerCase();
+        phrase = phrase.toLowerCase();
+        var xv = x.startsWith(phrase) ? 2 : 0;
+        xv += x.includes(" " + phrase) ? 1 : 0;
+        var yv = y.startsWith(phrase) ? 2 : 0;
+        yv += y.includes(" " + phrase) ? 1 : 0;
+        return ((xv > yv) ? -1 : ((xv &lt; yv) ? 1 : 0));
+    });
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-aggregations.html">aggregations</a></li><li><a href="module-analytics_admin_dashboard.html">analytics/admin_dashboard</a></li><li><a href="module-analytics_doctor_dashboard.html">analytics/doctor_dashboard</a></li><li><a href="module-config.html">config</a></li><li><a href="module-general.html">general</a></li><li><a href="module-mis_device-mis.html">mis/device-mis</a></li><li><a href="module-mis_doctor-mis.html">mis/doctor-mis</a></li><li><a href="module-mis_mother-mis.html">mis/mother-mis</a></li><li><a href="module-mis_organization-mis.html">mis/organization-mis</a></li><li><a href="module-mis_test-mis.html">mis/test-mis</a></li><li><a href="module-models_audio.html">models/audio</a></li><li><a href="module-models_babybeat.html">models/babybeat</a></li><li><a href="module-models_dataset.html">models/dataset</a></li><li><a href="module-models_devices.html">models/devices</a></li><li><a href="module-models_notifications.html">models/notifications</a></li><li><a href="module-models_tests.html">models/tests</a></li><li><a href="module-models_users.html">models/users</a></li><li><a href="module-models_validTests.html">models/validTests</a></li><li><a href="module-routes_aggregation.html">routes/aggregation</a></li><li><a href="module-routes_analytics.html">routes/analytics</a></li><li><a href="module-routes_general.html">routes/general</a></li><li><a href="module-routes_graph.html">routes/graph</a></li><li><a href="module-routes_mis.html">routes/mis</a></li><li><a href="module-routes_search.html">routes/search</a></li><li><a href="module-search_search.html">search/search</a></li></ul><h3>Global</h3><ul><li><a href="global.html#configValue">configValue</a></li><li><a href="global.html#databaseName">databaseName</a></li><li><a href="global.html#logger">logger</a></li><li><a href="global.html#normalizePort">normalizePort</a></li><li><a href="global.html#onError">onError</a></li><li><a href="global.html#onListening">onListening</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#server">server</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Feb 26 2025 14:40:32 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

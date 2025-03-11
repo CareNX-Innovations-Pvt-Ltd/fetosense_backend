@@ -54,3 +54,6 @@ Thumbs.db
 
 #keys
 *.pem
+
+# Environment variables
+.env

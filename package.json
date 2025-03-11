@@ -12,7 +12,9 @@
     "e2e": "ng e2e",
     "start:server": "nodemon server.js",
     "dev": "nodemon server.js",
-    "compodoc": "./node_modules/.bin/compodoc -p src/tsconfig.app.json"
+    "compodoc": "./node_modules/.bin/compodoc -p src/tsconfig.app.json",
+    "docs": "jsdoc -c jsdoc.json",
+    "doc": "npm run docs"
   },
   "keywords": [],
   "author": "",
@@ -37,6 +39,7 @@
     "winston-daily-rotate-file": "4.2.1"
   },
   "devDependencies": {
+    "jsdoc": "^4.0.4",
     "nodemon": "^2.0.2"
   }
 }

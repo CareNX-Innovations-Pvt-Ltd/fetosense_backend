@@ -1,7 +1,33 @@
 /*jshint esversion: 6 */
+
+/**
+ * @file search/search.js
+ * @module search/search
+ * @description Handles searching for mothers in the BabyBeat and Fetosense databases.
+ */
+
 const Users = require("../models/users"); // Import devices model
 const BBUsers = require("../models/babybeat").BBUsers;
 const general = require("../general/general");
+
+/**
+ * Searches for mothers based on the provided search string.
+ * 
+ * - Uses regex matching for flexible name searching.
+ * - Filters based on `searchDocumentId` (BabyBeat doctor association).
+ * - Filters based on `orgDocumentId` (Fetosense organization association).
+ * - Sorts results to prioritize names that start with the search string.
+ * 
+ * @function searchMother
+ * @param {Object} req - Express request object.
+ *   @param {string} [req.body.searchDocumentId] - (Optional) Doctor's document ID for filtering BabyBeat mothers.
+ *   @param {string} [req.body.orgDocumentId] - (Optional) Organization ID for filtering Fetosense mothers.
+ *   @param {string} req.body.searchString - Search term (minimum 3 characters required).
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next function.
+ * @returns {void} - Sends JSON response containing matched mothers or an error message.
+ */
+
 exports.searchMother = (req, res, next) => {
     const searchDocumentId = req.body.searchDocumentId ? req.body.searchDocumentId : null;
     const orgDocumentId = req.body.orgDocumentId ? req.body.orgDocumentId : null;

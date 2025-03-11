@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: mis/organization_mis.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: mis/organization_mis.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*jshint esversion: 6 */
+
+/**
+ * @file mis/organization-mis.js
+ * @module mis/organization-mis
+ * @description Fetches organization-related data, aggregates mother and test counts, and updates missing values.
+ */
+
+const Users = require("../models/users"); // Import devices model
+const Tests = require("../models/tests"); // Import tests model
+const aggregations = require("../aggregations/aggregation"); // import aggregations functions
+const general = require("../general/general");
+
+/**
+ * Fetches organization data based on filters and enriches it with aggregated mother and test counts.
+ * 
+ * - Filters organizations based on date range.
+ * - Aggregates total mothers and tests per organization.
+ * - Triggers re-aggregation if stored values differ from computed ones.
+ * 
+ * @function getData
+ * @param {Object} req - Express request object containing:
+ *   @param {string} [req.body.fromDate] - The start date for filtering organizations.
+ *   @param {string} [req.body.toDate] - The end date for filtering organizations.
+ * @param {Object} res - Express response object used to send HTTP responses.
+ * @param {Function} next - Express next function (not used in this function).
+ * @returns {void} - Sends the filtered organization data or an error response.
+ */
+
+const { aggregate } = require("../models/users");
+exports.getData = (req, res, next) => {
+    const fromDate = req.body.fromDate ? new Date(req.body.fromDate) : null;
+    const toDate = req.body.toDate ? new Date(req.body.toDate) : null;
+
+    var query = {
+        "type": "organization",
+        "isDeleted": { "$ne": true }
+    }
+    var testAggrQuery = [
+        {
+            "$project": {
+                "organizationId": 1,
+                "isDeleted": 1
+            }
+        },
+        // {
+        //     "$match": {
+        //         "isDeleted": {"$ne": true}
+        //     }
+        // },
+        {
+            "$group": {
+                "_id": { "organizationId": "$organizationId" },
+                "totalTests": { "$sum": 1 }
+            }
+        }
+    ];
+    var mothersAggrQuery = [
+        {
+            "$project": {
+                "organizationId": 1,
+                "isDeleted": 1,
+                "type": 1
+            }
+        },
+        {
+            "$match": {
+                // "isDeleted": {"$ne": true},
+                "type": "mother"
+            }
+        },
+        {
+            "$group": {
+                "_id": { "organizationId": "$organizationId" },
+                "totalMothers": { "$sum": 1 }
+            }
+        }
+    ];
+
+    if (req.body.fromDate != 'undefined' &amp;&amp; req.body.fromDate != null) {
+        query["createdOn"] = { "$gte": fromDate, "$lt": toDate }
+    }
+    else {
+        query["createdOn"] = { "$lte": toDate }
+    }
+
+    var testsCounts = {}; var mothersCounts = {};
+    console.log("qry1", query);
+    const orgQuery = Users.find(query);
+    orgQuery.then(documents => {
+        console.log("documents.length", documents.length);
+        var allDocuments = JSON.parse(JSON.stringify(documents));
+        console.log("testAggrQuery", testAggrQuery);
+        // Tests.aggregate(testAggrQuery, {
+        //     maxTimeMS: 240000
+        // }, function (err, tdocs) {
+        //     if (err) {
+        //         console.error("Aggregation error:", err);
+        //         return;
+        //     }
+        //     console.log("tdocs.length", tdocs.length);
+        //     for (tdoc of tdocs) {
+        //         testsCounts[tdoc._id.organizationId] = tdoc.totalTests;
+        //     }
+        console.log("mothersAggrQuery", mothersAggrQuery);
+        Users.aggregate(mothersAggrQuery).then(udocs => {
+            console.log("udocs.length", udocs.length);
+            for (udoc of udocs) {
+                mothersCounts[udoc._id.organizationId] = udoc.totalMothers;
+            }
+            for (var cnt = 0; cnt &lt; documents.length; cnt++) {
+                //allDocuments.push(documents[cnt]);
+                var doc = allDocuments[cnt];
+                //console.log(doc.documentId);
+                if (allDocuments[cnt]["noOfMother"] != mothersCounts[doc.documentId]) {
+                    aggregations.aggregateMothers(doc.documentId);
+                }
+                if (allDocuments[cnt]["noOfTests"] != testsCounts[doc.documentId]) {
+                    aggregations.aggregateTests(doc.documentId);
+                }
+                allDocuments[cnt]["noOfMother"] = mothersCounts[doc.documentId];
+                allDocuments[cnt]["noOfTests"] = testsCounts[doc.documentId];
+            }
+            //console.log(allDocuments[0], allDocuments[0].costructor);
+            res.status(200).json({
+                message: "Organizations fetched successfully!",
+                data: allDocuments,
+                count: allDocuments.length
+            });
+        }).catch(error => {
+            console.log("Error", error);
+            res.status(500).json({
+                message: "Fetching Organizations failed!"
+            });
+        });
+
+        //})
+        // .catch(error => {
+        //     console.log("Error", error);
+        //     res.status(500).json({
+        //         message: "Fetching Organizations failed!"
+        //     });
+        // });
+
+    }).catch(error => {
+        console.log("Error", error);
+        res.status(500).json({
+            message: "Fetching Organizations failed!"
+        });
+    });
+};
+
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-aggregations.html">aggregations</a></li><li><a href="module-analytics_admin_dashboard.html">analytics/admin_dashboard</a></li><li><a href="module-analytics_doctor_dashboard.html">analytics/doctor_dashboard</a></li><li><a href="module-config.html">config</a></li><li><a href="module-general.html">general</a></li><li><a href="module-mis_device-mis.html">mis/device-mis</a></li><li><a href="module-mis_doctor-mis.html">mis/doctor-mis</a></li><li><a href="module-mis_mother-mis.html">mis/mother-mis</a></li><li><a href="module-mis_organization-mis.html">mis/organization-mis</a></li><li><a href="module-mis_test-mis.html">mis/test-mis</a></li><li><a href="module-models_audio.html">models/audio</a></li><li><a href="module-models_babybeat.html">models/babybeat</a></li><li><a href="module-models_dataset.html">models/dataset</a></li><li><a href="module-models_devices.html">models/devices</a></li><li><a href="module-models_notifications.html">models/notifications</a></li><li><a href="module-models_tests.html">models/tests</a></li><li><a href="module-models_users.html">models/users</a></li><li><a href="module-models_validTests.html">models/validTests</a></li><li><a href="module-routes_aggregation.html">routes/aggregation</a></li><li><a href="module-routes_analytics.html">routes/analytics</a></li><li><a href="module-routes_general.html">routes/general</a></li><li><a href="module-routes_graph.html">routes/graph</a></li><li><a href="module-routes_mis.html">routes/mis</a></li><li><a href="module-routes_search.html">routes/search</a></li><li><a href="module-search_search.html">search/search</a></li></ul><h3>Global</h3><ul><li><a href="global.html#configValue">configValue</a></li><li><a href="global.html#databaseName">databaseName</a></li><li><a href="global.html#logger">logger</a></li><li><a href="global.html#normalizePort">normalizePort</a></li><li><a href="global.html#onError">onError</a></li><li><a href="global.html#onListening">onListening</a></li><li><a href="global.html#port">port</a></li><li><a href="global.html#server">server</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Feb 26 2025 14:40:32 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

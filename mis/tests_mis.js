@@ -1,9 +1,47 @@
 /*jshint esversion: 6 */
+
+/**
+ * @file mis/test-mis.js
+ * @module mis/test-mis
+ * @description Fetches test-related data, processes movement entries, calculates test types, and enriches with mother details.
+ */
+
 const Tests = require("../models/tests"); // Import tests model
 const Users = require("../models/users"); // Import users model
 const general = require("../general/general");
 
+/**
+ * Computes the average of an array of numbers.
+ * 
+ * - Uses `reduce` to sum all elements and divides by the array length.
+ * 
+ * @function average
+ * @param {number[]} array - The array of numbers to calculate the average.
+ * @returns {number} - The computed average.
+ */
+
+
 const average = (array) => array.reduce((a, b) => a + b) / array.length;
+
+/**
+ * Fetches test data based on filters, processes movement entries, and determines test type.
+ * 
+ * - Filters tests based on date range, organization ID, and doctor ID.
+ * - Retrieves and integrates mother age details.
+ * - Processes auto and manual movement entries.
+ * - Determines test type as `CTG` or `NST` based on `tocoEntries`.
+ * - Returns processed test data with enriched details.
+ * 
+ * @function getData
+ * @param {Object} req - Express request object containing:
+ *   @param {string} [req.body.fromDate] - The start date for filtering tests.
+ *   @param {string} [req.body.toDate] - The end date for filtering tests.
+ *   @param {string} [req.body.organizationId] - The organization ID to filter tests.
+ *   @param {string} [req.body.doctorId] - The doctor ID to filter tests.
+ * @param {Object} res - Express response object used to send HTTP responses.
+ * @param {Function} next - Express next function (not used in this function).
+ * @returns {void} - Sends the processed test data or an error response.
+ */
 
 exports.getData = (req, res, next) => {
     console.log("Test_MIS", req.body);
