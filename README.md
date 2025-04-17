@@ -120,6 +120,10 @@ For production deployment:
    pm2 start server.js --name fetosense-backend
    ```
 
+## Resources
+- [Fetosense Database Documentation](https://drive.google.com/file/d/1G6ylZKdpmR0vgcVoCyHIzaH20zCNILW7/view?usp=drive_link)
+- [Fetosense Dataflow Diagram](https://drive.google.com/file/d/1rOul_R0XncggCWzSvadeiuLMv96IOrPs/view?usp=sharing)
+
 ## Contributing
 - Fork the repository.
 - Create a new branch (`feature-xyz`).
